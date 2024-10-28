@@ -147,8 +147,7 @@ class _ProductPageState extends State<ProductPage>
                           const SizedBox(height: 15.0),
 
                           OverflowBar(
-                            overflowButtonSpacing: 10.0,
-                            buttonPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 10.0),
+                            spacing: 10.0,
                             alignment: MainAxisAlignment.center,
                             children: [
                               ElevatedButton.icon(
