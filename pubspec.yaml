@@ -1,0 +1,47 @@
+name: harvest_guard
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: '>=3.4.3 < 4.0.0'
+
+dependencies:
+  dismissible_page: ^1.0.2
+  dynamic_color: ^1.7.0
+  fluentui_system_icons: ^1.1.238
+  flutter_launcher_icons: ^0.13.1
+  flutter:
+    sdk: flutter
+  provider: ^6.1.2 
+  firebase_core: ^3.0.0
+  firebase_auth: ^5.0.0
+  cloud_firestore: ^5.0.0
+  firebase_storage: ^12.0.0
+  firebase_database: ^11.0.0
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
+  image_picker: ^1.1.1
+  
+  image: ^4.2.0
+  rxdart: ^0.27.7
+  intl: ^0.19.0
+  cached_network_image: ^3.3.1
+  flutter_cache_manager: ^3.3.2
+  material_color_utilities: ^0.11.1
+  flutter_local_notifications: ^17.1.2
+  animated_list_plus: ^0.5.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - assets/databases/address.db
+    - assets/front_page_images/
+
