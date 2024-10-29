@@ -9,11 +9,10 @@ import 'package:harvest_guard/services/chat.dart';
 import 'package:intl/intl.dart';
 
 class ProductPage extends StatefulWidget {
-  const ProductPage({super.key, required this.adminId, required this.productId});
+  const ProductPage(
+      {super.key, required this.adminId, required this.productId});
   final String productId;
   final String adminId;
-
-  
 
   @override
   State<ProductPage> createState() => _ProductPageState();
@@ -23,7 +22,6 @@ class _ProductPageState extends State<ProductPage>
     with AutomaticKeepAliveClientMixin<ProductPage> {
   @override
   bool get wantKeepAlive => true;
-
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +42,10 @@ class _ProductPageState extends State<ProductPage>
             .doc(widget.productId)
             .snapshots(),
         builder: (context, snapshot) {
-          var date = DateTime.fromMillisecondsSinceEpoch(int.tryParse(widget.productId) ?? DateTime.now().millisecondsSinceEpoch);
-          
+          var date = DateTime.fromMillisecondsSinceEpoch(
+              int.tryParse(widget.productId) ??
+                  DateTime.now().millisecondsSinceEpoch);
+
           if (!snapshot.hasData) {
             return const Center(
               child: CircularProgressIndicator(),
@@ -70,7 +70,8 @@ class _ProductPageState extends State<ProductPage>
                           children: [
                             CarouselWidget(
                               images: product['images'].cast<String>(),
-                              borderRadius: const BorderRadius.all(Radius.circular(20.0)),
+                              borderRadius:
+                                  const BorderRadius.all(Radius.circular(20.0)),
                               indicatorPadding: 20.0,
                               indicatorPosition: Alignment.bottomRight,
                               indicatorVisible: true,
@@ -98,7 +99,10 @@ class _ProductPageState extends State<ProductPage>
                         children: [
                           Text(
                             (product['item'] as String).toUpperCase(),
-                            style: Theme.of(context).textTheme.displaySmall!.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .displaySmall!
+                                .copyWith(
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
                           ),
@@ -145,91 +149,120 @@ class _ProductPageState extends State<ProductPage>
                             ),
                           ),
                           const SizedBox(height: 15.0),
-
-                          OverflowBar(
-                            spacing: 10.0,
-                            alignment: MainAxisAlignment.center,
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                   Navigator.of(context).pushNamed(
-                                    '/chat',
-                                    arguments: {
-                                      'chat': Chat(
-                                        chat: chatDatabase.chatsMap,
-                                        chatMembers: [widget.adminId, FirebaseAuth.instance.currentUser!.uid],
-                                      ),
-                                      'from': context.findAncestorWidgetOfExactType<
-                                          ProductPage>()!,
-                                    },
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
-                                  minimumSize: const Size(250.0, 50.0),
-                                ),
-                                icon: const Icon(FluentIcons.chat_24_filled),
-                                label: const Text('Chat with Seller'),
-                              ),
-                              ElevatedButton.icon(
-                                onPressed: () async {
-                                  await FirebaseFirestore.instance
-                                    .collection('products')
-                                    .doc(widget.adminId)
-                                    .collection('items')
-                                    .doc(widget.productId)
-                                    .update({'isFavorite': isFavorite = !isFavorite})
-                                    .then((value) =>
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(isFavorite ? 'Added to favorites' : 'Removed from favorites'),
-                                          action: SnackBarAction(
-                                            label: 'Undo',
-                                            onPressed: () async {
-                                              await FirebaseFirestore.instance
-                                                .collection('products')
-                                                .doc(widget.adminId)
-                                                .collection('items')
-                                                .doc(widget.productId)
-                                                .update({'isFavorite': isFavorite = !isFavorite})
-                                                .then((value) =>
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text('Undo successful'),
-                                                    ),
-                                                  )
-                                                );
-                                            },
-                                          ),
+                          const Divider(),
+                          const SizedBox(height: 15.0),
+                           SizedBox(
+                            width: double.infinity,
+                            child: 
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.of(context).pushNamed(
+                                      '/chat',
+                                      arguments: {
+                                        'chat': Chat(
+                                          chat: chatDatabase.chatsMap,
+                                          chatMembers: [
+                                            widget.adminId,
+                                            FirebaseAuth
+                                                .instance.currentUser!.uid
+                                          ],
                                         ),
-                                      )
+                                        'from': context
+                                            .findAncestorWidgetOfExactType<
+                                                ProductPage>()!,
+                                      },
                                     );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
-                                  minimumSize: const Size(250.0, 50.0),
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    surfaceTintColor: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceTint,
+                                    minimumSize: const Size(250.0, 50.0),
+                                  ),
+                                  icon: const Icon(FluentIcons.chat_24_filled),
+                                  label: const Text('Chat with Seller'),
                                 ),
-                                icon: Icon(isFavorite ? FluentIcons.star_24_filled : FluentIcons.star_24_regular),
-                                label: Text(isFavorite ? 'Remove from Favorites' : 'Add to Favorites'),
-                              ),
-                              // notify when auction starts
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  // Notify me
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
-                                  minimumSize: const Size(250.0, 50.0),
+                                const SizedBox(height: 16.0),
+                                ElevatedButton.icon(
+                                  onPressed: () async {
+                                    await FirebaseFirestore.instance
+                                        .collection('products')
+                                        .doc(widget.adminId)
+                                        .collection('items')
+                                        .doc(widget.productId)
+                                        .update({
+                                      'isFavorite': isFavorite = !isFavorite
+                                    }).then((value) =>
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(isFavorite
+                                                    ? 'Added to favorites'
+                                                    : 'Removed from favorites'),
+                                                action: SnackBarAction(
+                                                  label: 'Undo',
+                                                  onPressed: () async {
+                                                    await FirebaseFirestore
+                                                        .instance
+                                                        .collection('products')
+                                                        .doc(widget.adminId)
+                                                        .collection('items')
+                                                        .doc(widget.productId)
+                                                        .update({
+                                                      'isFavorite': isFavorite =
+                                                          !isFavorite
+                                                    }).then((value) =>
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                              const SnackBar(
+                                                                content: Text(
+                                                                    'Undo successful'),
+                                                              ),
+                                                            ));
+                                                  },
+                                                ),
+                                              ),
+                                            ));
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    surfaceTintColor: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceTint,
+                                    minimumSize: const Size(250.0, 50.0),
+                                  ),
+                                  icon: Icon(isFavorite
+                                      ? FluentIcons.star_24_filled
+                                      : FluentIcons.star_24_regular),
+                                  label: Text(isFavorite
+                                      ? 'Remove from Favorites'
+                                      : 'Add to Favorites'),
                                 ),
-                                icon: const Icon(FluentIcons.alert_24_filled),
-                                label: const Text('Notify me for auctions'),
-                              ),
-                            ],
-                          ),
-                          
-                          
-                          
-                        ],
+                                const SizedBox(height: 16.0),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    // Notify me
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    surfaceTintColor: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceTint,
+                                    minimumSize: const Size(250.0, 50.0),
+                                  ),
+                                  icon: const Icon(FluentIcons.alert_24_filled),
+                                  label: const Text('Notify me for auctions'),
+                                ),
+                              ],
+                            ),
+                          )
+                        
+                      )],
                       ),
                     ),
                   ],

@@ -66,13 +66,13 @@ class _ChatsPageState extends State<ChatPage>
                 return FutureBuilder(
                     future: getAddress(
                       int.parse(snapChats.data![widget.chat.chatUid]['members']
-                          [widget.chat.sender]['region']),
+                          [widget.chat.sender]['region'].toString()) ,
                       int.parse(snapChats.data![widget.chat.chatUid]['members']
-                          [widget.chat.sender]['province']),
+                          [widget.chat.sender]['province'].toString()),
                       int.parse(snapChats.data![widget.chat.chatUid]['members']
-                          [widget.chat.sender]['city']),
+                          [widget.chat.sender]['city'].toString()),
                       int.parse(snapChats.data![widget.chat.chatUid]['members']
-                          [widget.chat.sender]['barangay']),
+                          [widget.chat.sender]['barangay'].toString()),
                     ),
                     builder: (context,
                         AsyncSnapshot<Map<String, Object?>> snapSenderAddr) {
@@ -85,13 +85,13 @@ class _ChatsPageState extends State<ChatPage>
                       return FutureBuilder(
                           future: getAddress(
                             int.parse(snapChats.data![widget.chat.chatUid]
-                                ['members'][widget.chat.receiver]['region']),
+                                ['members'][widget.chat.receiver]['region'].toString()),
                             int.parse(snapChats.data![widget.chat.chatUid]
-                                ['members'][widget.chat.receiver]['province']),
+                                ['members'][widget.chat.receiver]['province'].toString()),
                             int.parse(snapChats.data![widget.chat.chatUid]
-                                ['members'][widget.chat.receiver]['city']),
+                                ['members'][widget.chat.receiver]['city'].toString()),
                             int.parse(snapChats.data![widget.chat.chatUid]
-                                ['members'][widget.chat.receiver]['barangay']),
+                                ['members'][widget.chat.receiver]['barangay'].toString()),
                           ),
                           builder: (context,
                               AsyncSnapshot<Map<String, Object?>>
@@ -143,10 +143,9 @@ class _ChatsPageState extends State<ChatPage>
                                     // }
 
                                     if (snapChats.hasError) {
-                                      return SliverFillRemaining(
+                                      return const SizedBox(
                                           child: Center(
-                                              child: Text(
-                                                  'Error: ${snapChats.error}')));
+                                              child: Text('An error occurred')));
                                     }
 
                                     imageReceiverBig = snapChats.hasData
@@ -388,12 +387,10 @@ class _ChatsPageState extends State<ChatPage>
                                                       isCentered: isCentered,
                                                     );
                                                   }
-                                                  return const SliverFillRemaining(
-                                                    child: Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    ),
-                                                  );
+                                                  return const SizedBox(
+                                                      child: Center(
+                                                          child:
+                                                              CircularProgressIndicator()));
                                                 }
 
                                                 return ChatWidget(
