@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:harvest_guard/custom/listener.dart';
+import 'package:harvest_guard/home/auctions/auction_card.dart';
 import 'package:harvest_guard/home/chats/chat_bar.dart';
 
 import 'package:harvest_guard/home/chats/chat_widget.dart';
@@ -31,14 +32,15 @@ class _ChatsPageState extends State<ChatPage>
   final TextEditingController _chatController = TextEditingController();
 
   late Stream<Map<String, dynamic>> _chats;
+  late Stream<Map<String, dynamic>> _auctions;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    _chats = Stream.value(Provider.of<ChatDatabase>(context).chatsMap);
+    _chats = Stream.value(context.watch<ChatDatabase>().chatsMap);
+    _auctions = Stream.value(context.watch<AuctionDatabase>().auctionsMap);
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +64,6 @@ class _ChatsPageState extends State<ChatPage>
 
           _address = snapshots.data![widget.chat.chatUid]['members']
               [widget.chat.receiver]['address'];
-          
-        
 
           return Scaffold(
             body: CustomScrollView(
@@ -234,7 +234,54 @@ class _ChatsPageState extends State<ChatPage>
                               final message = entry.value['message'];
                               final file = entry.value['file'];
 
-                              var chatWidget = ChatWidget(
+                              if (file != null && file['type'] == 'auction') {
+                                return StreamBuilder(
+                                    stream: _auctions,
+                                    builder: (context,
+                                        AsyncSnapshot<Map<String, dynamic>>
+                                            snapshot) {
+                                       
+                                       if (snapshot.hasData) {
+                                        final docs =
+                                            snapshot.data![file['data']['auctionId']];
+
+                                        file['isLoading'] = docs['itemInfo'] == null;
+
+                                        file['currentBid'] = docs['bidUid'].entries
+                                          .where((doc) => doc.value['userId'] == FirebaseAuth.instance.currentUser!.uid)
+                                          .map((doc) => doc.value['bid'])
+                                          .fold(0.00, (prev, bid) => bid);
+
+                                        file['auctionInfo'] = docs;
+
+                                        return ChatWidget(
+                                          chatUid: widget.chat.chatUid!,
+                                          message: message,
+                                          file: file,
+                                          isReceiver: isReceiver,
+                                          timestamp: timestamp,
+                                          imageSender: imageSender ??
+                                              Image.asset(
+                                                      'assets/transparent.png')
+                                                  .image,
+                                          imageReceiver: imageReceiver ??
+                                              Image.asset(
+                                                      'assets/transparent.png')
+                                                  .image,
+                                          isHiddenTime: isHiddenTime,
+                                          isHiddenDate: isHiddenDate,
+                                          isCentered: isCentered,
+                                        );
+                                      }
+                                      return const SliverFillRemaining(
+                                        child: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    });
+                              }
+
+                              return ChatWidget(
                                 chatUid: widget.chat.chatUid!,
                                 message: message,
                                 file: file,
@@ -249,9 +296,6 @@ class _ChatsPageState extends State<ChatPage>
                                 isCentered: isCentered,
                               );
 
-                              if (index == 0 && !isReceiver) {}
-
-                              return chatWidget;
                             }
                           }));
                 }),

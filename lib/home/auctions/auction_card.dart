@@ -4,7 +4,6 @@ import 'package:harvest_guard/services/countdown.dart';
 import 'package:intl/intl.dart';
 // Assuming CarouselWidget is in this path
 
-
 class AuctionCard extends StatelessWidget {
   final Map<String, dynamic>? product;
   final double bid;
@@ -38,7 +37,6 @@ class AuctionCard extends StatelessWidget {
     return formatter.format(amount);
   }
 
-
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -46,34 +44,27 @@ class AuctionCard extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    
+
     return Card(
       elevation: 2,
+      clipBehavior: Clip.antiAlias,
       surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.0),
-      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Carousel Section
             SizedBox(
               height: 170,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16.0),
-                ),
-                child: CarouselWidget(
-                  images: product!['images'].cast<String>(),
-                  borderRadius: const BorderRadius.all(Radius.circular(20.0)),
-                  indicatorPadding: 20.0,
-                  indicatorPosition: Alignment.bottomRight,
-                  indicatorVisible: true,
-                  internetFiles: true,
-                ),
+              child: CarouselWidget(
+                images: product!['images'].cast<String>(),
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(10.0)),
+                indicatorPadding: 20.0,
+                indicatorPosition: Alignment.bottomRight,
+                indicatorVisible: true,
+                internetFiles: true,
               ),
             ),
 
@@ -132,7 +123,8 @@ class AuctionCard extends StatelessWidget {
                             ),
                             Text(
                               _formatCurrency(
-                                (product!['quantity'] * product!['price']).toDouble(),
+                                (product!['quantity'] * product!['price'])
+                                    .toDouble(),
                               ),
                               style: theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -222,7 +214,6 @@ class AuctionCard extends StatelessWidget {
       ),
     );
   }
-
 
   Widget _buildSkeletonCard(BuildContext context) {
     return Card(

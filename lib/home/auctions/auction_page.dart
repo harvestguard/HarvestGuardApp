@@ -37,7 +37,7 @@ class _ChatsPageState extends State<AuctionPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    _auctions = Stream.value(Provider.of<AuctionDatabase>(context).auctionsMap);
+    _auctions = Stream.value(context.watch<AuctionDatabase>().auctionsMap);
     _scrollController.addListener(_scrollListener);
   }
 

@@ -368,22 +368,22 @@ class AuctionDatabase extends ChangeNotifier {
     });
   }
 
-  String formatTimeRemaining(Duration duration) {
+  // String formatTimeRemaining(Duration duration) {
 
 
-    String twoDigitMinutes = (duration.inMinutes.remainder(60)).toString();
-    String twoDigitSeconds = (duration.inSeconds.remainder(60)).toString();
+  //   String twoDigitMinutes = (duration.inMinutes.remainder(60)).toString();
+  //   String twoDigitSeconds = (duration.inSeconds.remainder(60)).toString();
 
-    if (duration.inDays > 0) {
-      return "${duration.inDays}d ${(duration.inHours.remainder(24))}h ${twoDigitMinutes}m ${twoDigitSeconds}s";
-    } else if (duration.inHours > 0) {
-      return "${(duration.inHours.remainder(24))}h ${twoDigitMinutes}m ${twoDigitSeconds}s";
-    } else if (duration.inMinutes > 0) {
-      return "${twoDigitMinutes}m ${twoDigitSeconds}s";
-    } else {
-      return "${twoDigitSeconds}s";
-    }
-  }
+  //   if (duration.inDays > 0) {
+  //     return "${duration.inDays}d ${(duration.inHours.remainder(24))}h ${twoDigitMinutes}m ${twoDigitSeconds}s";
+  //   } else if (duration.inHours > 0) {
+  //     return "${(duration.inHours.remainder(24))}h ${twoDigitMinutes}m ${twoDigitSeconds}s";
+  //   } else if (duration.inMinutes > 0) {
+  //     return "${twoDigitMinutes}m ${twoDigitSeconds}s";
+  //   } else {
+  //     return "${twoDigitSeconds}s";
+  //   }
+  // }
 
   void _initializeAuctionNotifications() async {
     await localChatNotif.initialize(

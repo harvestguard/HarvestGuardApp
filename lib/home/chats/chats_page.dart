@@ -35,7 +35,7 @@ class _membersPageState extends State<ChatsPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    _chats = Stream.value(Provider.of<ChatDatabase>(context).chatsMap);
+    _chats = Stream.value(context.watch<ChatDatabase>().chatsMap);
   }
 
   Future _loadSearchChats() async {

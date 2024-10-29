@@ -32,7 +32,7 @@ class _AuctionsPageState extends State<AuctionsPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    _auctions = Stream.value(Provider.of<AuctionDatabase>(context).auctionsMap);
+    _auctions = Stream.value(context.watch<AuctionDatabase>().auctionsMap);
   }
 
   @override
