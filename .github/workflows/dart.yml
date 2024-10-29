@@ -1,8 +1,7 @@
 on:
   push:
-    branches:
-      - master
-
+    branches: [ "main" ]
+  
 name: Build To Release
 
 jobs:
