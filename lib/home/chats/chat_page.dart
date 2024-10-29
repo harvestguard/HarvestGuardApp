@@ -237,9 +237,9 @@ class _ChatsPageState extends State<ChatPage>
                               var chatWidget = ChatWidget(
                                 chatUid: widget.chat.chatUid!,
                                 message: message,
-                                file: '',
+                                file: file,
                                 isReceiver: isReceiver,
-                                timestamp: entry.value['timestamp'],
+                                timestamp: timestamp,
                                 imageSender: imageSender ??
                                     Image.asset('assets/transparent.png').image,
                                 imageReceiver: imageReceiver ??

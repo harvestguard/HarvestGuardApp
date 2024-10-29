@@ -17,6 +17,8 @@ enum NotificationChannel {
   reminder,
 }
 
+
+
 class ChatDatabase extends ChangeNotifier {
   Map<String, StreamSubscription> chatEvents = {};
   Map<String, dynamic> chatsMap = {};
@@ -29,8 +31,7 @@ class ChatDatabase extends ChangeNotifier {
     _initializeChatNotifications();
     FirebaseFirestore.instance
         .collection('chats')
-        .where('info.members.${FirebaseAuth.instance.currentUser!.uid}',
-            isEqualTo: true)
+        .where('info.members.${FirebaseAuth.instance.currentUser!.uid}', isEqualTo: true)
         .snapshots()
         .listen((event) {
       for (var element in event.docChanges) {
@@ -41,7 +42,7 @@ class ChatDatabase extends ChangeNotifier {
           if (chatsMap[element.doc.id] == null) {
             chatsMap[element.doc.id] = element.doc.data();
 
-            for (var member in element.doc.data()!['info']['members']) {
+            for (var member in element.doc.data()!['info']['members'].keys) {
               if (member != FirebaseAuth.instance.currentUser!.uid) {
                 FirebaseDatabase.instance
                     .ref()
@@ -49,8 +50,7 @@ class ChatDatabase extends ChangeNotifier {
                     .child(member)
                     .once()
                     .then((value) {
-                  Map<dynamic, dynamic> user =
-                      value.snapshot.value! as Map<dynamic, dynamic>;
+                  Map<dynamic, dynamic> user = value.snapshot.value! as Map<dynamic, dynamic>;
                   chatsMap[element.doc.id]['members'][member] = user;
                   chatsMap[element.doc.id]['members'][member]['name'] =
                     {
@@ -58,7 +58,6 @@ class ChatDatabase extends ChangeNotifier {
                       'middleName': user['middleName'],
                       'lastName': user['lastName'],
                     };
-
                   notifyListeners();
                 });
               }
@@ -84,8 +83,7 @@ class ChatDatabase extends ChangeNotifier {
             for (var message in event.docChanges) {
               if (message.type == DocumentChangeType.added &&
                   !event.metadata.isFromCache &&
-                  message.doc.data()!['sender'] !=
-                      FirebaseAuth.instance.currentUser!.uid &&
+                  message.doc.data()!['sender'] != FirebaseAuth.instance.currentUser!.uid &&
                   chatsMap[element.doc.id].containsKey('messages') &&
                   !chatsMap[element.doc.id]['messages']
                       .containsKey(message.doc.data()!['timestamp'])) {
@@ -133,7 +131,7 @@ class ChatDatabase extends ChangeNotifier {
           }
           print("change");
         } else if (element.type == DocumentChangeType.removed &&
-            chatEvents.containsKey(element.doc.id)) {
+          chatEvents.containsKey(element.doc.id)) {
           chatEvents[element.doc.id]!.cancel();
           chatEvents.remove(element.doc.id);
           notifyListeners();
@@ -272,32 +270,32 @@ class AuctionDatabase extends ChangeNotifier {
               );
             }
 
-            if (auctionsMap[element.doc.id]['timer'] == null) {
-              auctionsMap[element.doc.id]['timer'] =
-                  Timer.periodic(const Duration(seconds: 1), (timer) {
-                var dtS = DateTime.fromMillisecondsSinceEpoch(
-                        1000 * int.parse(element.doc.data()!['epochEnd']))
-                    .difference(DateTime.now());
-                var dtE = DateTime.fromMillisecondsSinceEpoch(
-                        1000 * int.parse(element.doc.data()!['epochStart']))
-                    .difference(DateTime.now());
+            // if (auctionsMap[element.doc.id]['timer'] == null) {
+            //   auctionsMap[element.doc.id]['timer'] =
+            //       Timer.periodic(const Duration(seconds: 1), (timer) {
+            //     var dtS = DateTime.fromMillisecondsSinceEpoch(
+            //             1000 * int.parse(element.doc.data()!['epochEnd']))
+            //         .difference(DateTime.now());
+            //     var dtE = DateTime.fromMillisecondsSinceEpoch(
+            //             1000 * int.parse(element.doc.data()!['epochStart']))
+            //         .difference(DateTime.now());
 
-                if (!dtS.isNegative && dtE.isNegative) {
-                  auctionsMap[element.doc.id]!['status'] = 1;
-                  auctionsMap[element.doc.id]!['statusTime'] = formatTimeRemaining(dtS);
-                } else if (!dtS.isNegative && !dtE.isNegative) {
-                  auctionsMap[element.doc.id]!['status'] = 0;
-                  auctionsMap[element.doc.id]!['statusTime'] = formatTimeRemaining(dtE);
-                } else if (dtE.isNegative && dtS.isNegative) {
-                  auctionsMap[element.doc.id]!['status'] = -1;
-                  auctionsMap[element.doc.id]!['statusTime'] = 'Ended';
-                }
+            //     if (!dtS.isNegative && dtE.isNegative) {
+            //       auctionsMap[element.doc.id]!['status'] = 1;
+            //       auctionsMap[element.doc.id]!['statusTime'] = formatTimeRemaining(dtS);
+            //     } else if (!dtS.isNegative && !dtE.isNegative) {
+            //       auctionsMap[element.doc.id]!['status'] = 0;
+            //       auctionsMap[element.doc.id]!['statusTime'] = formatTimeRemaining(dtE);
+            //     } else if (dtE.isNegative && dtS.isNegative) {
+            //       auctionsMap[element.doc.id]!['status'] = -1;
+            //       auctionsMap[element.doc.id]!['statusTime'] = 'Ended';
+            //     }
 
-                print('Timer: ${dtS.isNegative} ${dtE.isNegative}');
-                notifyListeners();
-              });
+            //     print('Timer: ${dtS.isNegative} ${dtE.isNegative}');
+            //     notifyListeners();
+            //   });
            
-            }
+            // }
           });
 
           var auctionBidMessages = FirebaseFirestore.instance

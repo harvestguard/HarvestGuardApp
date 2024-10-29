@@ -1,5 +1,6 @@
 /.idea
 /.dart_tool
 /.vscode
+/build
 .flutter-plugins
 .flutter-plugins-dependencies

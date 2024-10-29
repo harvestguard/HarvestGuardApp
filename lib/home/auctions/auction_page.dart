@@ -10,6 +10,7 @@ import 'package:harvest_guard/custom/listener.dart';
 import 'package:harvest_guard/global.dart';
 
 import 'package:harvest_guard/services/chat.dart';
+import 'package:harvest_guard/services/countdown.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -80,21 +81,14 @@ class _ChatsPageState extends State<AuctionPage>
             final docs = snapshot.data![widget.auctionUid];
             final product = docs['itemInfo'];
             final admin = docs['adminInfo'];
-            final bidders = docs['bidUid'].entries.toList();
+            var bidders = docs['bidUid'].entries.toList();
             // sort the bidders by the highest bid
             bidders.sort((a, b) =>
                 (b.value['bid'] as int).compareTo(a.value['bid'] as int));
             print('listahan: $bidders');
 
-            String status = '';
-
-            if (docs['status'] == 0) {
-              status = 'Starts in';
-            } else if (docs['status'] == 1) {
-              status = 'Ends in';
-            } else if (docs['status'] == -1) {
-              status = 'Ended';
-            }
+            var countdown = Countdown.getCountdownString(
+                int.parse(docs['epochStart']), int.parse(docs['epochEnd']));
 
             return Stack(children: <Widget>[
               // add floating action button
@@ -242,27 +236,29 @@ class _ChatsPageState extends State<AuctionPage>
                                     ]),
                                   ]),
                               const SizedBox(width: 20.0),
-                              SizedBox(
-                                width: 110,
-                                child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Opacity(
-                                          opacity: 0.7,
-                                          child: Text(status,
+                              countdown[0] == 'Auction ended'
+                                  ? const SizedBox()
+                                  : SizedBox(
+                                      width: 110,
+                                      child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Opacity(
+                                                opacity: 0.7,
+                                                child: Text(countdown[0],
+                                                    style: const TextStyle(
+                                                        fontSize: 14.0))),
+                                            const SizedBox(height: 10.0),
+                                            Text(
+                                              countdown[1]
+                                                  .replaceFirst('d ', ' day\n'),
                                               style: const TextStyle(
-                                                  fontSize: 14.0))),
-                                      const SizedBox(height: 10.0),
-                                      Text(
-                                        (docs['statusTime'] as String)
-                                            .replaceFirst('d ', ' day\n'),
-                                        style: const TextStyle(
-                                          fontSize: 16.0,
-                                        ),
-                                      ),
-                                    ]),
-                              ),
+                                                fontSize: 16.0,
+                                              ),
+                                            ),
+                                          ]),
+                                    ),
                             ]),
                         const SizedBox(height: 30.0),
                         const Opacity(
@@ -301,7 +297,7 @@ class _ChatsPageState extends State<AuctionPage>
                           ),
                         ),
                         const SizedBox(height: 25.0),
-                        docs['status'] == 1
+                        countdown[0] == 'Ends in'
                             ? Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -460,7 +456,10 @@ class _ChatsPageState extends State<AuctionPage>
                               arguments: {
                                 'chat': Chat(
                                   chat: chatDatabase.chatsMap,
-                                  chatMembers: [docs['adminUid'], FirebaseAuth.instance.currentUser!.uid],
+                                  chatMembers: [
+                                    docs['adminUid'],
+                                    FirebaseAuth.instance.currentUser!.uid
+                                  ],
                                 ),
                                 'from': context.findAncestorWidgetOfExactType<
                                     AuctionPage>()!,
@@ -477,14 +476,14 @@ class _ChatsPageState extends State<AuctionPage>
                         )),
                         SizedBox(
                             height: MediaQuery.of(context).padding.bottom +
-                                (docs['status'] == 1 ? 120.0 : 20.0)),
+                                (countdown[0] == 'Ends in' ? 120.0 : 20.0)),
                       ],
                     ),
                   ))
                 ],
               ),
 
-              docs['status'] == 1
+              countdown[0] == 'Ends in'
                   ? Positioned(
                       bottom: 20 + MediaQuery.of(context).padding.bottom,
                       right: 20,

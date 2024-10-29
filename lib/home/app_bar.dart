@@ -79,38 +79,7 @@ class ChatInfo {
   ImageProvider get image => NetworkImage(thumbProfileImage);
 
   static ChatInfo fromQuery(QueryDocumentSnapshot query) {
-    bool isGroup = query['members'].length > 2;
-    String receiver = '';
-    String name = '';
-    String thumbProfileImage = '';
-    String profileImage = '';
-
-    if (isGroup) {
-      name = query['info']['name'] ?? query['members'].keys.toList().join(', ');
-    } else {
-      for (var member in query['info']['members']) {
-        if (member != FirebaseAuth.instance.currentUser!.uid) {
-          receiver = member;
-          break;
-        }
-      }
-      name =
-          '${query['members'][receiver]['name']['firstName']} ${query['members'][receiver]['name']['middleName']} ${query['members'][receiver]['name']['lastName']}';
-      thumbProfileImage = query['members'][receiver]['thumbProfileImage'];
-      profileImage = query['members'][receiver]['profileImage'];
-    }
-
-
-
-    return ChatInfo(
-      uid: query.id,
-      name: name,
-      thumbProfileImage: thumbProfileImage,
-      profileImage: profileImage,
-      lastMessage: query['info']['lastMessage'],
-      lastMessageSender: query['info']['lastMessageSender'],
-      lastMessageTime: query['info']['lastMessageTime'],
-    );
+    return fromMap(query.id, query.data() as Map<String, dynamic>);
   }
 
   static ChatInfo fromMap(String key, Map<String, dynamic> map) {
@@ -126,12 +95,8 @@ class ChatInfo {
     if (isGroup) {
       name = map['info']['name'] ?? map['members'].keys.toList().join(', ');
     } else {
-      for (var member in map['info']['members']) {
-        if (member != FirebaseAuth.instance.currentUser!.uid) {
-          receiver = member;
-          break;
-        }
-      }
+      receiver = map['info']['members'].keys
+          .firstWhere((member) => member != FirebaseAuth.instance.currentUser!.uid);
 
       var user = map['members'][receiver];
 
@@ -143,7 +108,7 @@ class ChatInfo {
 
     
 
-    if (map['messages'].isNotEmpty) {
+    if (map.keys.contains('messages') && map['messages'].isNotEmpty) {
       lastMessage = map['messages'].values.last['message'];
       lastMessageSender = map['messages'].values.last['sender'];
       lastMessageTime = map['messages'].values.last['timestamp'];

@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:harvest_guard/custom/listener.dart';
 import 'package:harvest_guard/services/tools.dart';
+import 'package:provider/provider.dart';
 
 class ChatWidget extends StatefulWidget {
   final String chatUid;
   final String message;
-  final String file;
+  final Map file;
   final bool isReceiver;
   final String timestamp;
   final ImageProvider imageSender;
