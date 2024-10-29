@@ -93,11 +93,11 @@ class _ChatWidgetState extends State<ChatWidget> {
                       ? Theme.of(context)
                           .colorScheme
                           .surfaceTint
-                          .withOpacity(0.25)
+                          .withAlpha(125)
                       : Theme.of(context)
                           .colorScheme
                           .inversePrimary
-                          .withOpacity(0.5),
+                          .withAlpha(0125),
                   onTap: () {
                     setState(() {
                       if (widget.isHiddenTime) {

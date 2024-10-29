@@ -83,7 +83,7 @@ class _InitialPageState extends State<InitialPage> {
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.9)),
+                              .withAlpha(220)),
                     ),
                     const SizedBox(height: 30),
                     SizedBox(
