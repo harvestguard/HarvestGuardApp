@@ -10,6 +10,7 @@ class AuctionCard extends StatelessWidget {
   final int bidCount;
   final int epochStart;
   final int epochEnd;
+  final double? height;
   final VoidCallback? onTap;
   final String? bidLabel;
   final EdgeInsetsGeometry padding;
@@ -22,6 +23,7 @@ class AuctionCard extends StatelessWidget {
     required this.bidCount,
     required this.epochStart,
     required this.epochEnd,
+    this.height,
     this.bidLabel = 'Highest Bid',
     this.onTap,
     this.padding = const EdgeInsets.all(16.0),
@@ -39,7 +41,7 @@ class AuctionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
+    if (isLoading || product == null) {
       return _buildSkeletonCard(context);
     }
 
@@ -51,302 +53,345 @@ class AuctionCard extends StatelessWidget {
       surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Carousel Section
-            SizedBox(
-              height: 170,
-              child: CarouselWidget(
-                images: product!['images'].cast<String>(),
-                borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(10.0)),
-                indicatorPadding: 20.0,
-                indicatorPosition: Alignment.bottomRight,
-                indicatorVisible: true,
-                internetFiles: true,
-              ),
-            ),
-
-            // Content Section
-            Padding(
-              padding: padding,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SizedBox(
+              height: height ??
+                  constraints
+                      .maxHeight, // Use provided height or expand to parent
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title and Quantity
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          product!['item'].toString().toUpperCase(),
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0,
-                          vertical: 4.0,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        child: Text(
-                          '${product!['quantity']} pcs',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSecondaryContainer,
-                          ),
-                        ),
-                      ),
-                    ],
+                  // Carousel Section
+                  SizedBox(
+                    height: 170,
+                    child: CarouselWidget(
+                      images: product!['images'].cast<String>(),
+                      borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(10.0)),
+                      indicatorPadding: 20.0,
+                      indicatorPosition: Alignment.bottomRight,
+                      indicatorVisible: true,
+                      internetFiles: true,
+                    ),
                   ),
-                  const SizedBox(height: 16.0),
 
-                  // Price Information
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Starting Price',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                  // Content Section
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: padding,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Title and Quantity
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      product!['item'].toString().toUpperCase(),
+                                      style:
+                                          theme.textTheme.titleLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8.0,
+                                      vertical: 4.0,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          theme.colorScheme.secondaryContainer,
+                                      borderRadius: BorderRadius.circular(12.0),
+                                    ),
+                                    child: Text(
+                                      '${product!['quantity']} pcs',
+                                      style:
+                                          theme.textTheme.labelSmall?.copyWith(
+                                        color: theme
+                                            .colorScheme.onSecondaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            Text(
-                              _formatCurrency(
-                                (product!['quantity'] * product!['price'])
-                                    .toDouble(),
+                              const SizedBox(height: 16.0),
+
+                              // Price Information
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Starting Price',
+                                          style: theme.textTheme.labelMedium
+                                              ?.copyWith(
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        Text(
+                                          _formatCurrency(
+                                            (product!['quantity'] *
+                                                    product!['price'])
+                                                .toDouble(),
+                                          ),
+                                          style: theme.textTheme.titleLarge
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                        ),
+                                        Text(
+                                          '(${_formatCurrency(product!['price'].toDouble())} per item)',
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          bidLabel!,
+                                          style: theme.textTheme.labelMedium
+                                              ?.copyWith(
+                                            color: theme
+                                                .colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        Text(
+                                          _formatCurrency(bid),
+                                          style: theme.textTheme.titleLarge
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.green.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                            Text(
-                              '(${_formatCurrency(product!['price'].toDouble())} per item)',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              bidLabel!,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                        const Spacer(), // This will push the footer to the bottom
+                        // Footer Section
+                        Container(
+                          padding: const EdgeInsets.all(16.0),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceVariant
+                                .withOpacity(0.5),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Bid Count
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.gavel,
+                                    size: 16.0,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: 4.0),
+                                  Text(
+                                    '$bidCount bids',
+                                    style:
+                                        theme.textTheme.labelMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            Text(
-                              _formatCurrency(bid),
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green.shade700,
+                              // Time Remaining
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.timer_outlined,
+                                    size: 16.0,
+                                  ),
+                                  const SizedBox(width: 4.0),
+                                  Countdown(
+                                      epochStart: epochStart,
+                                      epochEnd: epochEnd)
+                                ],
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
-            const Spacer(),
-            // Footer Section
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(16.0),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Bid Count
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.gavel,
-                        size: 16.0,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4.0),
-                      Text(
-                        '$bidCount bids',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Time Remaining
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.timer_outlined,
-                        size: 16.0,
-                      ),
-                      const SizedBox(width: 4.0),
-                      Countdown(epochStart: epochStart, epochEnd: epochEnd)
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
   }
 
   Widget _buildSkeletonCard(BuildContext context) {
+    ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return Card(
-      elevation: 4,
+      elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 180,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16.0),
-              ),
-            ),
-          ),
-          Padding(
-            padding: padding,
+      surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SizedBox(
+            height: height ??
+                constraints
+                    .maxHeight, // Use provided height or expand to parent
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      width: 120,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(4.0),
-                      ),
+                Container(
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16.0),
                     ),
-                    Container(
-                      width: 60,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 16.0),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                Padding(
+                  padding: padding,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
-                            width: 80,
-                            height: 16,
+                            width: 120,
+                            height: 24,
                             decoration: BoxDecoration(
-                              color: Colors.grey[300],
+                              color: colorScheme.primaryContainer,
                               borderRadius: BorderRadius.circular(4.0),
                             ),
                           ),
-                          const SizedBox(height: 8.0),
                           Container(
-                            width: 100,
-                            height: 24,
+                            width: 60,
+                            height: 20,
                             decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(4.0),
+                              color: colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(12.0),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 16.0),
+                      Row(
                         children: [
-                          Container(
-                            width: 80,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(4.0),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 80,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primaryContainer,
+                                    borderRadius: BorderRadius.circular(4.0),
+                                  ),
+                                ),
+                                const SizedBox(height: 8.0),
+                                Container(
+                                  width: 100,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primaryContainer,
+                                    borderRadius: BorderRadius.circular(4.0),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8.0),
-                          Container(
-                            width: 100,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(4.0),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 80,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primaryContainer,
+                                    borderRadius: BorderRadius.circular(4.0),
+                                  ),
+                                ),
+                                const SizedBox(height: 8.0),
+                                Container(
+                                  width: 100,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primaryContainer,
+                                    borderRadius: BorderRadius.circular(4.0),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(16.0),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 60,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(4.0),
+                    ],
                   ),
                 ),
+                const Spacer(),
                 Container(
-                  width: 80,
-                  height: 16,
+                  padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(4.0),
+                    color: colorScheme.surfaceVariant.withOpacity(0.5),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                      ),
+                      Container(
+                        width: 80,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

@@ -17,8 +17,6 @@ enum NotificationChannel {
   reminder,
 }
 
-
-
 class ChatDatabase extends ChangeNotifier {
   Map<String, StreamSubscription> chatEvents = {};
   Map<String, dynamic> chatsMap = {};
@@ -31,38 +29,35 @@ class ChatDatabase extends ChangeNotifier {
     _initializeChatNotifications();
     FirebaseFirestore.instance
         .collection('chats')
-        .where('info.members.${FirebaseAuth.instance.currentUser!.uid}', isEqualTo: true)
+        .where('info.members.${FirebaseAuth.instance.currentUser!.uid}',
+            isEqualTo: true)
         .snapshots()
         .listen((event) {
       for (var element in event.docChanges) {
         if (element.type == DocumentChangeType.added ||
             element.type == DocumentChangeType.modified &&
                 !chatEvents.containsKey(element.doc.id)) {
-
           if (chatsMap[element.doc.id] == null) {
             chatsMap[element.doc.id] = element.doc.data();
 
             for (var member in element.doc.data()!['info']['members'].keys) {
-              if (member != FirebaseAuth.instance.currentUser!.uid) {
-                FirebaseDatabase.instance
-                    .ref()
-                    .child('users')
-                    .child(member)
-                    .once()
-                    .then((value) {
-                  Map<dynamic, dynamic> user = value.snapshot.value! as Map<dynamic, dynamic>;
-                  chatsMap[element.doc.id]['members'][member] = user;
-                  chatsMap[element.doc.id]['members'][member]['name'] =
-                    {
-                      'firstName': user['firstName'],
-                      'middleName': user['middleName'],
-                      'lastName': user['lastName'],
-                    };
-                  notifyListeners();
-                });
-              }
+              FirebaseDatabase.instance
+                  .ref()
+                  .child('users')
+                  .child(member)
+                  .once()
+                  .then((value) {
+                Map<dynamic, dynamic> user =
+                    value.snapshot.value! as Map<dynamic, dynamic>;
+                chatsMap[element.doc.id]['members'][member] = user;
+                chatsMap[element.doc.id]['members'][member]['name'] = {
+                  'firstName': user['firstName'],
+                  'middleName': user['middleName'],
+                  'lastName': user['lastName'],
+                };
+                notifyListeners();
+              });
             }
-
           } else {
             chatsMap[element.doc.id].addAll(element.doc.data());
           }
@@ -83,7 +78,8 @@ class ChatDatabase extends ChangeNotifier {
             for (var message in event.docChanges) {
               if (message.type == DocumentChangeType.added &&
                   !event.metadata.isFromCache &&
-                  message.doc.data()!['sender'] != FirebaseAuth.instance.currentUser!.uid &&
+                  message.doc.data()!['sender'] !=
+                      FirebaseAuth.instance.currentUser!.uid &&
                   chatsMap[element.doc.id].containsKey('messages') &&
                   !chatsMap[element.doc.id]['messages']
                       .containsKey(message.doc.data()!['timestamp'])) {
@@ -95,7 +91,6 @@ class ChatDatabase extends ChangeNotifier {
                     .then((value) {
                   Map<dynamic, dynamic> user =
                       value.snapshot.value! as Map<dynamic, dynamic>;
-
 
                   // print('User: ${user['firstName']} ${user['middleName']} ${user['lastName']}');
 
@@ -131,7 +126,7 @@ class ChatDatabase extends ChangeNotifier {
           }
           print("change");
         } else if (element.type == DocumentChangeType.removed &&
-          chatEvents.containsKey(element.doc.id)) {
+            chatEvents.containsKey(element.doc.id)) {
           chatEvents[element.doc.id]!.cancel();
           chatEvents.remove(element.doc.id);
           notifyListeners();
@@ -269,33 +264,6 @@ class AuctionDatabase extends ChangeNotifier {
                 auctionsMap[element.doc.id]['itemInfo']['adminUid'],
               );
             }
-
-            // if (auctionsMap[element.doc.id]['timer'] == null) {
-            //   auctionsMap[element.doc.id]['timer'] =
-            //       Timer.periodic(const Duration(seconds: 1), (timer) {
-            //     var dtS = DateTime.fromMillisecondsSinceEpoch(
-            //             1000 * int.parse(element.doc.data()!['epochEnd']))
-            //         .difference(DateTime.now());
-            //     var dtE = DateTime.fromMillisecondsSinceEpoch(
-            //             1000 * int.parse(element.doc.data()!['epochStart']))
-            //         .difference(DateTime.now());
-
-            //     if (!dtS.isNegative && dtE.isNegative) {
-            //       auctionsMap[element.doc.id]!['status'] = 1;
-            //       auctionsMap[element.doc.id]!['statusTime'] = formatTimeRemaining(dtS);
-            //     } else if (!dtS.isNegative && !dtE.isNegative) {
-            //       auctionsMap[element.doc.id]!['status'] = 0;
-            //       auctionsMap[element.doc.id]!['statusTime'] = formatTimeRemaining(dtE);
-            //     } else if (dtE.isNegative && dtS.isNegative) {
-            //       auctionsMap[element.doc.id]!['status'] = -1;
-            //       auctionsMap[element.doc.id]!['statusTime'] = 'Ended';
-            //     }
-
-            //     print('Timer: ${dtS.isNegative} ${dtE.isNegative}');
-            //     notifyListeners();
-            //   });
-           
-            // }
           });
 
           var auctionBidMessages = FirebaseFirestore.instance
@@ -324,8 +292,8 @@ class AuctionDatabase extends ChangeNotifier {
                       value.snapshot.value! as Map<dynamic, dynamic>;
                   auctionsMap[element.doc.id]['bidUid'][bid.doc.id]
                       ['thumbProfileImage'] = user['thumbProfileImage'];
-                  auctionsMap[element.doc.id]['bidUid'][bid.doc.id]
-                      ['name'] = '${user['firstName']} ${user['middleName']} ${user['lastName']}';
+                  auctionsMap[element.doc.id]['bidUid'][bid.doc.id]['name'] =
+                      '${user['firstName']} ${user['middleName']} ${user['lastName']}';
                   // add 250 ms delay to allow the user to be added to the map
 
                   Future.delayed(const Duration(milliseconds: 250), () {
@@ -367,23 +335,6 @@ class AuctionDatabase extends ChangeNotifier {
       }
     });
   }
-
-  // String formatTimeRemaining(Duration duration) {
-
-
-  //   String twoDigitMinutes = (duration.inMinutes.remainder(60)).toString();
-  //   String twoDigitSeconds = (duration.inSeconds.remainder(60)).toString();
-
-  //   if (duration.inDays > 0) {
-  //     return "${duration.inDays}d ${(duration.inHours.remainder(24))}h ${twoDigitMinutes}m ${twoDigitSeconds}s";
-  //   } else if (duration.inHours > 0) {
-  //     return "${(duration.inHours.remainder(24))}h ${twoDigitMinutes}m ${twoDigitSeconds}s";
-  //   } else if (duration.inMinutes > 0) {
-  //     return "${twoDigitMinutes}m ${twoDigitSeconds}s";
-  //   } else {
-  //     return "${twoDigitSeconds}s";
-  //   }
-  // }
 
   void _initializeAuctionNotifications() async {
     await localChatNotif.initialize(
