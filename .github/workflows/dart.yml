@@ -16,12 +16,9 @@ jobs:
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
-      - run: flutter pub get
-      - run: flutter test
-      - run: flutter build apk
-      - run: flutter build appbundle
 
-      - uses: oberhauser-dev/flutter- release-action@v0
+      - name: Flutter Release Action
+        uses: Oberhauser-Dev/flutter-release-action@v0
         with:
           token: ${{ github.token }}
           dry-run: true
