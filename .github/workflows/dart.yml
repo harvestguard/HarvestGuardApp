@@ -20,6 +20,9 @@ jobs:
       - run: flutter doctor -v
       - run: flutter pub get
         
+       #6 Building APK
+      - name: Build APK
+        run: flutter build apk --release
 
         #9 Upload Artifacts
       - name: Upload Artifacts
