@@ -1,8 +1,8 @@
+name: Build To Release
+
 on:
   push:
     branches: [ "main" ]
-  
-name: Build To Release
 
 jobs:
   build:
@@ -10,6 +10,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all tags and branches
+          
+      - name: Get Latest Tag
+        id: get-latest-tag
+        run: |
+          # Get the latest tag, default to v0.0.0 if no tags exist
+          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $latest_tag"
+          
+          # Extract version numbers
+          version=$(echo $latest_tag | sed 's/v//')
+          IFS='.' read -ra VERSION_PARTS <<< "$version"
+          major=${VERSION_PARTS[0]:-0}
+          minor=${VERSION_PARTS[1]:-0}
+          patch=${VERSION_PARTS[2]:-0}
+          
+          # Increment patch version
+          new_patch=$((patch + 1))
+          new_tag="v$major.$minor.$new_patch"
+          
+          echo "NEW_TAG=$new_tag" >> $GITHUB_ENV
+          echo "New tag will be: $new_tag"
+
       - uses: actions/setup-java@v3.12.0
         with:
           distribution: 'oracle'
@@ -26,7 +50,5 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/app/outputs/apk/release/*"
-          tag: v0.0.1
+          tag: ${{ env.NEW_TAG }}
           token: ${{ secrets.TOKEN }}
-
-  
