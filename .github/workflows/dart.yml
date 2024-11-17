@@ -32,12 +32,21 @@ jobs:
           
           # Increment patch version
           new_patch=$((patch + 1))
+          new_version="$major.$minor.$new_patch"
           
-          # Combine version with timestamp
-          new_tag="v$major.$minor.$new_patch-$timestamp"
+          # Combine version with timestamp for tag
+          new_tag="v$new_version-$timestamp"
           
+          # Export variables
           echo "NEW_TAG=$new_tag" >> $GITHUB_ENV
+          echo "NEW_VERSION=$new_version+$timestamp" >> $GITHUB_ENV
           echo "New tag will be: $new_tag"
+          echo "New version will be: $new_version+$timestamp"
+
+      - name: Update version in pubspec.yaml
+        run: |
+          sed -i "s/^version: .*/version: ${{ env.NEW_VERSION }}/" pubspec.yaml
+          cat pubspec.yaml
 
       - uses: actions/setup-java@v3.12.0
         with:
