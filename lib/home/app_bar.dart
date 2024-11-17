@@ -383,11 +383,11 @@ class SearchChatsHeaderDelegate extends SliverPersistentHeaderDelegate {
 
 class SearchProductInfo {
   SearchProductInfo(
-      {required this.adminUid,
+      {required this.sellerUid,
       required this.itemUid,
       required this.name,
       required this.thumbProductImage});
-  final String adminUid;
+  final String sellerUid;
   final String itemUid;
   final String name;
   final String thumbProductImage;
@@ -439,7 +439,7 @@ class _SearchProductsState extends State<SearchListProductData> {
           setState(() {
             widget._searchProductInfoHistory.add(
               SearchProductInfo(
-                adminUid: value['adminUid'],
+                sellerUid: value['adminUid'],
                 itemUid: key,
                 name: value['name'],
                 thumbProductImage: value['thumbProductImage'],
@@ -474,7 +474,7 @@ class _SearchProductsState extends State<SearchListProductData> {
             // get the main page
             if (mounted) {
               context.pushTransparentRoute(
-                  ProductPage(adminId: info.adminUid, productId: info.itemUid));
+                  ProductPage(sellerUid: info.sellerUid, productId: info.itemUid));
             }
           },
         ));
@@ -496,7 +496,7 @@ class _SearchProductsState extends State<SearchListProductData> {
 
                 if (mounted) {
                   context.pushTransparentRoute(ProductPage(
-                      adminId: filteredInfo.adminUid,
+                      sellerUid: filteredInfo.sellerUid,
                       productId: filteredInfo.itemUid));
                 }
               },
@@ -535,7 +535,7 @@ class _SearchProductsState extends State<SearchListProductData> {
         .child(info.itemUid)
         .set({
       'name': info.name,
-      'adminUid': info.adminUid,
+      'adminUid': info.sellerUid,
       'thumbProductImage': info.thumbProductImage,
       'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
     });

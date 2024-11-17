@@ -1,13 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:harvest_guard/custom/listener.dart';
 import 'package:harvest_guard/home/auctions/auction_card.dart';
 import 'package:harvest_guard/home/chats/chat_page.dart';
 import 'package:harvest_guard/home/shipping/shipping_card.dart';
 import 'package:harvest_guard/services/tools.dart';
-import 'package:provider/provider.dart';
 
 class ChatWidget extends StatefulWidget {
   final String chatUid;
@@ -219,7 +216,6 @@ class _ChatWidgetState extends State<ChatWidget> {
                                       return ShipmentCard(
                                         auctionId: widget.file!['data']
                                             ['auctionId'],
-                                        bidUid: widget.file!['data']['bidUid'],
                                         auctionInfo:
                                             widget.file!['auctionInfo'],
                                         itemInfo: widget.file!['auctionInfo']
@@ -425,17 +421,12 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                 Expanded(
                                                   child: FilledButton(
                                                       onPressed: (() {
-                                                        Navigator.of(context)
-                                                            .pushNamed(
-                                                          '/shipping',
+                
+                                                         Navigator.of(context).pushNamed(
+                                                          '/delivery-tracking',
                                                           arguments: {
-                                                            'shipmentId': widget
-                                                                        .file![
-                                                                    'data']
-                                                                ['auctionId'],
-                                                            'from': context
-                                                                .findAncestorWidgetOfExactType<
-                                                                    ChatPage>(),
+                                                            'shipmentId': widget.file!['data']['shipmentId'],
+                                                            'shippingData': widget.file!['data'],
                                                           },
                                                         );
                                                       }),

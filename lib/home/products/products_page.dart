@@ -312,7 +312,7 @@ class _ProductsPageState extends State<ProductsPage>
               for (final item in _allItems) {
                 searchProductInfos.add(SearchProductInfo(
                   name: item['item'] as String,
-                  adminUid: item['adminUid'],
+                  sellerUid: item['adminUid'],
                   itemUid: item['itemUid'],
                   thumbProductImage: (item['images'] as List<dynamic>)[0],
                 ));
@@ -404,7 +404,7 @@ class _ProductsPageState extends State<ProductsPage>
                                       .withOpacity(0.5),
                                   onTap: () {
                                     context.pushTransparentRoute(ProductPage(
-                                        adminId: item['adminUid'] as String,
+                                        sellerUid: item['adminUid'] as String,
                                         productId: item['itemUid'] as String));
                                   },
                                   borderRadius: const BorderRadius.all(

@@ -5,6 +5,7 @@ GlobalKey<NavigatorState> navigatorKeyMain = GlobalKey();
 GlobalKey<NavigatorState> navItemHome = GlobalKey();
 GlobalKey<NavigatorState> navItemChats = GlobalKey();
 GlobalKey<NavigatorState> navItemAuctions = GlobalKey();
+GlobalKey<NavigatorState> navItemShipments = GlobalKey();
 GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 ChatDatabase chatDatabase = ChatDatabase();
 AuctionDatabase auctionDatabase = AuctionDatabase();

@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -46,8 +48,8 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       barrierDismissible: false, // Make the dialog not cancellable
       builder: (BuildContext context) {
-        return WillPopScope(
-          onWillPop: () async => false, // Disable back button
+        return PopScope(
+          canPop: false, // Disable back button
           child: const AlertDialog(
             title: Center(
               child: Text('Loading'),
@@ -71,18 +73,50 @@ class _LoginPageState extends State<LoginPage> {
       password: _passwordController.text,
     )
         .then((value) async {
-      var isAdmin = await FirebaseDatabase.instance
-          .ref()
-          .child('users')
-          .child(value.user!.uid)
-          .child('isAdmin')
-          .once();
+      var userRef =
+          FirebaseDatabase.instance.ref().child('users').child(value.user!.uid);
 
-      if (isAdmin.snapshot.value != null) {
+      var userRoles = await userRef.get();
+      var isSeller = userRoles.child('isSeller').child('status').value;
+      var isDeliveryAgent = userRoles.child('isDeliveryAgent').child('status').value;
+      var isSuperAdmin = userRoles.child('isSuperAdmin').value;
+
+      
+      print(
+          'isSeller: ${isSeller}, isDeliveryAgent: ${isDeliveryAgent}, isSuperAdmin: ${isSuperAdmin}');
+
+
+      if (isSeller != null || isDeliveryAgent != null || isSuperAdmin != null) {
         Navigator.of(context).pop();
+        final url = 'https://harvestguard.vercel.app';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Admin should login from the web app'),
+          SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            content: Text.rich(
+              TextSpan(
+                style: Theme.of(context).textTheme.bodyMedium,
+                text: 'Please visit ',
+                children: [
+                  TextSpan(
+                    text: url,
+                    style: TextStyle(
+                        decoration: TextDecoration.underline,
+                        color: Theme.of(context).colorScheme.primaryFixedDim),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () async {
+                        if (!await launchUrl(Uri.parse(url))) {
+                          throw Exception('Could not launch $url');
+                        }
+                      },
+                  ),
+                  TextSpan(text: ' to login as'),
+                  TextSpan(text: isSeller == 'APPROVED' ? ' a seller.' :
+                                 isDeliveryAgent == 'APPROVED' ? ' a delivery agaent.' :
+                                 isSuperAdmin == true ? 'a super admin.' : '.')
+                ],
+              ),
+            ),
+            duration: const Duration(seconds: 10),
           ),
         );
         FirebaseAuth.instance.signOut();
@@ -157,7 +191,10 @@ class _LoginPageState extends State<LoginPage> {
                       labelText: 'Email',
                       hintText: 'Enter your email',
                       helperText: 'Email must be a valid email address.',
-                      fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                      fillColor: Theme.of(context)
+                          .colorScheme
+                          .surfaceTint
+                          .withOpacity(0.1),
                       filled: true,
                     ),
                   ),
@@ -186,7 +223,10 @@ class _LoginPageState extends State<LoginPage> {
                       labelText: 'Password',
                       hintText: 'Enter your password',
                       helperText: 'Password must be at least 8 characters long',
-                      fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                      fillColor: Theme.of(context)
+                          .colorScheme
+                          .surfaceTint
+                          .withOpacity(0.1),
                       filled: true,
                     ),
                   ),
@@ -197,7 +237,8 @@ class _LoginPageState extends State<LoginPage> {
                   height: 50,
                   child: ElevatedButton(
                     style: TextButton.styleFrom(
-                      surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
+                      surfaceTintColor:
+                          Theme.of(context).colorScheme.surfaceTint,
                     ),
                     onPressed: () => _login(context),
                     child: const Text('Login'),

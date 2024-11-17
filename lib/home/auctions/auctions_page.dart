@@ -1,15 +1,11 @@
-import 'dart:async';
-
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:harvest_guard/custom/carousel.dart';
 import 'package:harvest_guard/custom/listener.dart';
 import 'package:harvest_guard/home/app_bar.dart';
 import 'package:harvest_guard/home/auctions/auction_card.dart';
 import 'package:harvest_guard/settings/settings_page.dart';
 import 'package:provider/provider.dart';
-
 import '../../global.dart';
 
 class AuctionsPage extends StatefulWidget {
@@ -24,32 +20,84 @@ class _AuctionsPageState extends State<AuctionsPage>
     with AutomaticKeepAliveClientMixin<AuctionsPage> {
   @override
   bool get wantKeepAlive => true;
-  String? status;
 
-  late Stream<Map<String, dynamic>> _auctions;
+  void _navigateToSettings() {
+    Navigator.of(navigatorKeyMain.currentContext!).push(
+      CupertinoPageRoute(
+        builder: (_) => const SettingsPage(),
+      ),
+    );
+  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void _openDrawer() {
+    scaffoldKey.currentState?.openDrawer();
+  }
 
-    _auctions = Stream.value(context.watch<AuctionDatabase>().auctionsMap);
+  void _navigateToAuction(BuildContext context, String auctionUid) {
+    Navigator.of(context).pushNamed(
+      '/auction',
+      arguments: {
+        'auctionUid': auctionUid,
+        'from': context.findAncestorWidgetOfExactType<AuctionsPage>(),
+      },
+    );
+  }
+
+  Widget _buildAuctionGrid(BuildContext context, AuctionDatabase auctionDatabase) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = screenWidth ~/ 390;
+    
+    final List<MapEntry<String, dynamic>> auctions = 
+        auctionDatabase.auctionsMap.entries.toList();
+
+    return SliverToBoxAdapter(
+      child: GridView.builder(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: 5,
+          crossAxisSpacing: 5,
+        ),
+        itemCount: auctions.length,
+        itemBuilder: (context, index) => _buildAuctionCard(context, auctions[index]),
+      ),
+    );
+  }
+
+  Widget _buildAuctionCard(BuildContext context, MapEntry<String, dynamic> auction) {
+    final isLoading = auction.value['itemInfo'] == null;
+    final bidders = _getSortedBidders(auction.value['bidUid']);
+    final currentBid = _getCurrentBid(isLoading, bidders);
+
+    return AuctionCard(
+      isLoading: isLoading,
+      product: auction.value['itemInfo'],
+      bid: currentBid,
+      bidCount: auction.value['bidUid'].length,
+      epochStart: int.parse(auction.value['epochStart']),
+      epochEnd: int.parse(auction.value['epochEnd']),
+      onTap: () => _navigateToAuction(context, auction.key),
+    );
+  }
+
+  List<dynamic> _getSortedBidders(dynamic bidUidData) {
+    final bidders = bidUidData.entries.toList() as List;
+    bidders.sort((a, b) => (b.value['bid']).compareTo(a.value['bid']));
+    return bidders;
+  }
+
+  double _getCurrentBid(bool isLoading, List<dynamic> bidders) {
+    if (isLoading || bidders.isEmpty) return 0.00;
+    return bidders[0].value['bid'] * 1.00;
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
-
-    final actions = [
-      IconButton(
-          icon: const Icon(FluentIcons.alert_16_filled), onPressed: () {}),
-      IconButton(
-          icon: const Icon(FluentIcons.person_circle_20_filled),
-          onPressed: () => Navigator.of(navigatorKeyMain.currentContext!).push(
-                CupertinoPageRoute(
-                  builder: (context) => const SettingsPage(),
-                ),
-              )),
-    ];
+    
+    final auctionDatabase = context.watch<AuctionDatabase>();
 
     return Scaffold(
       body: CustomScrollView(
@@ -60,95 +108,16 @@ class _AuctionsPageState extends State<AuctionsPage>
             title: 'Auctions',
             leftIcon: IconButton(
               icon: const Icon(FluentIcons.list_24_filled),
-              onPressed: () {
-                scaffoldKey.currentState!.openDrawer();
-              },
+              onPressed: _openDrawer,
             ),
             rightIcon: IconButton(
               icon: const Icon(FluentIcons.cart_24_regular),
               onPressed: () {
-                // cart
+                // Cart functionality
               },
             ),
           ),
-          StreamBuilder(
-              stream: _auctions,
-              builder: (context, AsyncSnapshot<Map<String, dynamic>> snapshot) {
-                if (snapshot.hasError) {
-                  return const SliverFillRemaining(
-                    child: Center(
-                      child: Text('An error occurred'),
-                    ),
-                  );
-                } else if (snapshot.data == null) {
-                  return const SliverFillRemaining(
-                    child: Center(
-                      child: Text('No auctions available'),
-                    ),
-                  );
-                } else if (snapshot.hasData) {
-                  final List<MapEntry<String, dynamic>> docs =
-                      snapshot.data!.entries.toList();
-
-                  return SliverToBoxAdapter(
-                      child: GridView.builder(
-                          shrinkWrap: true,
-                          padding: const EdgeInsets.only(
-                              left: 10, right: 10, bottom: 10),
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount:
-                                MediaQuery.of(context).size.width ~/ 390,
-                            mainAxisSpacing: 5,
-                            crossAxisSpacing: 5,
-                          ),
-                          itemCount: docs.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final isLoading =
-                                docs[index].value['itemInfo'] == null;
-                            var bidders = docs[index]
-                                .value['bidUid']
-                                .entries
-                                .toList() as List;
-                            bidders.sort((a, b) =>
-                                (b.value['bid']).compareTo(a.value['bid']));
-
-                            return AuctionCard(
-                                isLoading: isLoading,
-                                product: docs[index].value['itemInfo'],
-                                bid: isLoading
-                                    ? 0.00
-                                    : bidders.isEmpty
-                                        ? 0.00
-                                        : bidders[0].value['bid'] * 1.00,
-                                bidCount: docs[index].value['bidUid'].length,
-                                epochStart:
-                                    int.parse(docs[index].value['epochStart']),
-                                epochEnd:
-                                    int.parse(docs[index].value['epochEnd']),
-                                onTap: () {
-                                  print(
-                                      'nullme: ${context.findAncestorWidgetOfExactType<AuctionsPage>()}');
-                                  Navigator.of(context).pushNamed(
-                                    '/auction',
-                                    arguments: {
-                                      'auctionUid': docs[index].key,
-                                      'from':
-                                          context.findAncestorWidgetOfExactType<
-                                              AuctionsPage>(),
-                                    },
-                                  );
-                                });
-                          }));
-                }
-
-                return const SliverFillRemaining(
-                  child: Center(
-                    child: Text('No auctions available'),
-                  ),
-                );
-              }),
+          _buildAuctionGrid(context, auctionDatabase),
         ],
       ),
     );

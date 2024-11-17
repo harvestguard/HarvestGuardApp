@@ -198,7 +198,7 @@ class AuctionCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(16.0),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceVariant
+                            color: theme.colorScheme.surfaceContainerHighest
                                 .withOpacity(0.5),
                           ),
                           child: Row(
@@ -364,7 +364,7 @@ class AuctionCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant.withOpacity(0.5),
+                    color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

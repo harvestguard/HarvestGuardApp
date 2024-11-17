@@ -10,6 +10,8 @@ import 'package:harvest_guard/front_page/login_page.dart';
 import 'package:harvest_guard/front_page/register_page.dart';
 import 'package:harvest_guard/home/auctions/auction_page.dart';
 import 'package:harvest_guard/home/chats/chat_page.dart';
+import 'package:harvest_guard/home/shipping/shipment_page.dart';
+import 'package:harvest_guard/home/shipping/shipments_page.dart';
 import 'package:harvest_guard/services/chat.dart';
 import 'package:harvest_guard/settings/settings_page.dart';
 import 'package:harvest_guard/slide_page.dart';
@@ -69,82 +71,65 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-        providers: [
-          ListenableProvider<ChatDatabase>(
-            create: (_) => ChatDatabase(),
-          ),
-          ListenableProvider<AuctionDatabase>(
-            create: (_) => AuctionDatabase(),
-          ),
-        ],
+    return ChangeNotifierProvider(
+        create: (context) => ChatDatabase(),
         child: ChangeNotifierProvider(
-          create: (context) => SettingsProvider(),
-          builder: (context, _) {
-            final settingsProvider = Provider.of<SettingsProvider>(context);
-            return DynamicColorBuilder(
-              builder: (ColorScheme? lightColorScheme,
-                  ColorScheme? darkColorScheme) {
-                return MaterialApp(
-                    title: 'HarvestGuard',
-                    theme: ThemeData(
-                        colorScheme: settingsProvider.isDynamicTheming
-                            ? lightColorScheme
-                            : MaterialTheme.lightScheme()
-                                .toColorScheme()
-                                .copyWith(
-                                  surfaceTint: MaterialTheme.lightScheme()
-                                      .toColorScheme()
-                                      .surfaceTint,
-                                )),
-                    darkTheme: ThemeData(
-                        colorScheme: settingsProvider.isDynamicTheming
-                            ? darkColorScheme
-                            : MaterialTheme.darkScheme()
-                                .toColorScheme()
-                                .copyWith(
-                                  surfaceTint: MaterialTheme.darkScheme()
-                                      .toColorScheme()
-                                      .surfaceTint,
-                                )),
-                    themeMode: settingsProvider.themeMode,
-                    home: FirebaseAuth.instance.currentUser != null
-                        ? MultiProvider(
-                            providers: [
-                              ChangeNotifierProvider(
-                                create: (context) => chatDatabase,
-                              ),
-                              ChangeNotifierProvider(
-                                create: (context) => auctionDatabase,
-                              )
-                            ],
-                            child: const HomePage(),
-                          )
-                        : const InitialPage(),
-                    debugShowCheckedModeBanner: false,
-                    navigatorKey: navigatorKeyMain,
-                    onGenerateRoute: (RouteSettings settings) {
-                      Map<String, dynamic> arguments =
-                          settings.arguments as Map<String, dynamic>;
-                      switch (settings.name) {
-                        case '/':
-                          return SlidePageRoute(
-                              builder: (_) => const InitialPage(),
-                              oldScreen: arguments['from'] as Widget,
-                              settings: settings);
-                        case '/login':
-                          return SlidePageRoute(
-                              builder: (_) => const LoginPage(),
-                              oldScreen: arguments['from'] as Widget,
-                              settings: settings);
-                        case '/register':
-                          return SlidePageRoute(
-                              builder: (_) => const RegisterPage(),
-                              oldScreen: arguments['from'] as Widget,
-                              settings: settings);
-                        case '/home':
-                          return SlidePageRoute(
-                              builder: (_) => MultiProvider(
+            create: (context) => AuctionDatabase(),
+            child: ChangeNotifierProvider(
+                create: (context) => ShipmentDatabase(),
+                child: ChangeNotifierProvider(
+                  create: (context) => SettingsProvider(),
+                  builder: (context, _) {
+                    final settingsProvider =
+                        Provider.of<SettingsProvider>(context);
+                    return DynamicColorBuilder(
+                      builder: (ColorScheme? lightColorScheme,
+                          ColorScheme? darkColorScheme) {
+                        return MaterialApp(
+                            title: 'HarvestGuard',
+                            theme: ThemeData(
+                                pageTransitionsTheme:
+                                    const PageTransitionsTheme(
+                                  builders: <TargetPlatform,
+                                      PageTransitionsBuilder>{
+                                    // Set the predictive back transitions for Android.
+                                    TargetPlatform.android:
+                                        PredictiveBackPageTransitionsBuilder(),
+                                  },
+                                ),
+                                colorScheme: settingsProvider.isDynamicTheming
+                                    ? lightColorScheme
+                                    : MaterialTheme.lightScheme()
+                                        .toColorScheme()
+                                        .copyWith(
+                                          surfaceTint:
+                                              MaterialTheme.lightScheme()
+                                                  .toColorScheme()
+                                                  .surfaceTint,
+                                        )),
+                            darkTheme: ThemeData(
+                                pageTransitionsTheme:
+                                    const PageTransitionsTheme(
+                                  builders: <TargetPlatform,
+                                      PageTransitionsBuilder>{
+                                    // Set the predictive back transitions for Android.
+                                    TargetPlatform.android:
+                                        PredictiveBackPageTransitionsBuilder(),
+                                  },
+                                ),
+                                colorScheme: settingsProvider.isDynamicTheming
+                                    ? darkColorScheme
+                                    : MaterialTheme.darkScheme()
+                                        .toColorScheme()
+                                        .copyWith(
+                                          surfaceTint:
+                                              MaterialTheme.darkScheme()
+                                                  .toColorScheme()
+                                                  .surfaceTint,
+                                        )),
+                            themeMode: settingsProvider.themeMode,
+                            home: FirebaseAuth.instance.currentUser != null
+                                ? MultiProvider(
                                     providers: [
                                       ChangeNotifierProvider(
                                         create: (context) => chatDatabase,
@@ -154,40 +139,96 @@ class MyApp extends StatelessWidget {
                                       )
                                     ],
                                     child: const HomePage(),
-                                  ),
-                              oldScreen: arguments['from'] as Widget,
-                              settings: settings);
+                                  )
+                                : const InitialPage(),
+                            debugShowCheckedModeBanner: false,
+                            navigatorKey: navigatorKeyMain,
+                            onGenerateRoute: (RouteSettings settings) {
+                              Map<String, dynamic> arguments =
+                                  settings.arguments as Map<String, dynamic>;
+                              switch (settings.name) {
+                                case '/':
+                                  return SlidePageRoute(
+                                      builder: (_) => const InitialPage(),
+                                      oldScreen: arguments['from'] as Widget,
+                                      settings: settings);
+                                case '/login':
+                                  return SlidePageRoute(
+                                      builder: (_) => const LoginPage(),
+                                      oldScreen: arguments['from'] as Widget,
+                                      settings: settings);
+                                case '/register':
+                                  return SlidePageRoute(
+                                      builder: (_) => const RegisterPage(),
+                                      oldScreen: arguments['from'] as Widget,
+                                      settings: settings);
+                                case '/home':
+                                  return SlidePageRoute(
+                                      builder: (_) => MultiProvider(
+                                            providers: [
+                                              ChangeNotifierProvider(
+                                                create: (context) =>
+                                                    chatDatabase,
+                                              ),
+                                              ChangeNotifierProvider(
+                                                create: (context) =>
+                                                    auctionDatabase,
+                                              )
+                                            ],
+                                            child: const HomePage(),
+                                          ),
+                                      oldScreen: arguments['from'] as Widget,
+                                      settings: settings);
 
-                        case '/auction':
-                          return SlidePageRoute(
-                              builder: (_) => ChangeNotifierProvider(
-                                    create: (context) => auctionDatabase,
-                                    child: AuctionPage(
-                                        auctionUid:
-                                            arguments['auctionUid'] as String),
-                                  ),
-                              oldScreen: arguments['from'] as Widget,
-                              settings: settings);
-                        case '/chat':
-                          return SlidePageRoute(
-                              builder: (_) => ChangeNotifierProvider(
-                                    create: (context) => chatDatabase,
-                                    child: ChatPage(
-                                        chat: arguments['chat'] as Chat),
-                                  ),
-                              oldScreen: arguments['from'] as Widget,
-                              settings: settings);
-                        case '/settings':
-                          return SlidePageRoute(
-                              builder: (_) => const SettingsPage(),
-                              oldScreen: arguments['from'] as Widget,
-                              settings: settings);
-                      }
-                      return null;
-                    });
-              },
-            );
-          },
-        ));
+                                case '/delivery-tracking':
+                                  return MaterialPageRoute(
+                                    builder: (_) => DeliveryTrackingPage(
+                                      shipmentId: arguments['shipmentId'],
+                                      shippingData: arguments['shippingData'],
+                                    ),
+                                  );
+                                case '/auction':
+                                  return SlidePageRoute(
+                                      builder: (_) => ChangeNotifierProvider(
+                                            create: (context) =>
+                                                auctionDatabase,
+                                            child: AuctionPage(
+                                                auctionUid:
+                                                    arguments['auctionUid']
+                                                        as String),
+                                          ),
+                                      oldScreen: arguments['from'] as Widget,
+                                      settings: settings);
+                                case '/chat':
+                                  return SlidePageRoute(
+                                      builder: (_) => ChangeNotifierProvider(
+                                            create: (context) => chatDatabase,
+                                            child: ChatPage(
+                                                chat:
+                                                    arguments['chat'] as Chat),
+                                          ),
+                                      oldScreen: arguments['from'] as Widget,
+                                      settings: settings);
+                                case '/settings':
+                                  return SlidePageRoute(
+                                      builder: (_) => const SettingsPage(),
+                                      oldScreen: arguments['from'] as Widget,
+                                      settings: settings);
+                              }
+                              return null;
+                            });
+                      },
+                    );
+                  },
+                ))));
   }
+}
+class DeliveryTrackingArguments {
+  final String shipmentId;
+  final Map<String, dynamic> shippingData;
+
+  DeliveryTrackingArguments({
+    required this.shipmentId,
+    required this.shippingData,
+  });
 }

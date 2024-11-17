@@ -299,8 +299,8 @@ class _RegisterPageState extends State<RegisterPage> {
         context: context,
         barrierDismissible: false, // Make the dialog not cancellable
         builder: (BuildContext context) {
-          return WillPopScope(
-            onWillPop: () async => false, // Disable back button
+          return PopScope(
+            canPop: false, // Disable back button
             child: AlertDialog(
               title: const Text('Enter OTP'),
               content: Column(
@@ -327,15 +327,18 @@ class _RegisterPageState extends State<RegisterPage> {
                 TextButton(
                   child: const Text('Submit'),
                   onPressed: () async {
+                    if (!context.mounted) return;
                     Navigator.of(context).pop();
                     showLoadingPopup(context);
 
-                    final AuthCredential credential =
-                        PhoneAuthProvider.credential(
-                            verificationId: _verificationId, smsCode: _otpcode);
-                    await FirebaseAuth.instance.currentUser!
-                        .linkWithCredential(credential)
-                        .then((value) {
+                    try {
+                      final AuthCredential credential =
+                          PhoneAuthProvider.credential(
+                              verificationId: _verificationId, smsCode: _otpcode);
+                      await FirebaseAuth.instance.currentUser!
+                          .linkWithCredential(credential);
+                          
+                      if (!context.mounted) return;
                       Navigator.of(context).pop();
                       Navigator.of(context).pushNamedAndRemoveUntil(
                         '/home',
@@ -343,18 +346,20 @@ class _RegisterPageState extends State<RegisterPage> {
                         (Route<dynamic> route) => false,
                       );
 
+                      if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Account created successfully'),
                         ),
                       );
-                    }).catchError((error) {
+                    } catch (error) {
+                      if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Error occured: ${error.toString()}'),
+                          content: Text('Error occurred: ${error.toString()}'),
                         ),
                       );
-                    });
+                    }
                   },
                 ),
               ],

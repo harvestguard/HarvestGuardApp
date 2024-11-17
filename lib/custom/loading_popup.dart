@@ -8,8 +8,8 @@ void showLoadingPopup(BuildContext context) {
         context: context,
         barrierDismissible: false, // Make the dialog not cancellable
         builder: (BuildContext context) {
-          return WillPopScope(
-            onWillPop: () async => false, // Disable back button
+          return PopScope(
+            canPop: false, // Disable back button
             child: const AlertDialog(
               title: Center(
                 child: Text('Loading'),

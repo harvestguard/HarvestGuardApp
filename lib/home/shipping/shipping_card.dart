@@ -1,28 +1,23 @@
-import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:harvest_guard/custom/carousel.dart';
-import 'package:harvest_guard/services/tools.dart';
 
 class ShipmentCard extends StatefulWidget {
   final Map<String, dynamic> auctionInfo;
   final Map<String, dynamic> itemInfo;
   final VoidCallback? onTap;
   final double bid;
-  final String bidUid;
   final String auctionId;
   final Widget? footerWidget;
   final String? messageId;
   final String? chatId;
   final double? height;
+  final bool showContact;
 
   const ShipmentCard({
     super.key,
     required this.auctionInfo,
     required this.auctionId,
-    required this.bidUid,
     required this.bid,
     required this.itemInfo,
     this.onTap,
@@ -30,6 +25,7 @@ class ShipmentCard extends StatefulWidget {
     this.messageId,
     this.chatId,
     this.height,
+    this.showContact = true,
   });
 
   @override
@@ -69,9 +65,7 @@ class _ShipmentCardState extends State<ShipmentCard> {
                             images: widget.itemInfo['images'].cast<String>(),
                             borderRadius:
                                 const BorderRadius.all(Radius.circular(10.0)),
-                            indicatorPadding: 20.0,
-                            indicatorPosition: Alignment.bottomRight,
-                            indicatorVisible: true,
+                            indicatorVisible: false,
                             internetFiles: true,
                           ),
                         ),
@@ -90,7 +84,7 @@ class _ShipmentCardState extends State<ShipmentCard> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      widget.itemInfo['item'],
+                                      widget.itemInfo['item'].toString().toUpperCase(),
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleLarge
@@ -201,25 +195,27 @@ class _ShipmentCardState extends State<ShipmentCard> {
                                         ?.withOpacity(0.8),
                                   ),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Contact Number',
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.color
-                                        ?.withOpacity(0.6),
-                                  ),
-                        ),
-                        Text(
-                          widget.auctionInfo['buyerContact'],
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                        ),
+                        ... widget.showContact ? [
+                          const SizedBox(height: 16),
+                          Text(
+                            'Contact Number',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color
+                                          ?.withOpacity(0.6),
+                                    ),
+                          ),
+                          Text(
+                            widget.auctionInfo['buyerContact'],
+                            style:
+                                Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                          ),
+                        ] : []
                       ],
                     ),
                   ),
@@ -231,7 +227,7 @@ class _ShipmentCardState extends State<ShipmentCard> {
                     decoration: BoxDecoration(
                       color: Theme.of(context)
                           .colorScheme
-                          .surfaceVariant
+                          .surfaceContainerHighest
                           .withOpacity(0.5),
                     ),
                     padding: const EdgeInsets.all(16),

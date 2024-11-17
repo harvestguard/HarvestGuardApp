@@ -20,6 +20,8 @@ enum NotificationChannel {
 class ChatDatabase extends ChangeNotifier {
   Map<String, StreamSubscription> chatEvents = {};
   Map<String, dynamic> chatsMap = {};
+  final bool _disposed = false;
+  StreamSubscription? _mainSubscription;
 
   bool firstRun = true;
   final FlutterLocalNotificationsPlugin localChatNotif =
@@ -27,112 +29,7 @@ class ChatDatabase extends ChangeNotifier {
 
   ChatDatabase() {
     _initializeChatNotifications();
-    FirebaseFirestore.instance
-        .collection('chats')
-        .where('info.members.${FirebaseAuth.instance.currentUser!.uid}',
-            isEqualTo: true)
-        .snapshots()
-        .listen((event) {
-      for (var element in event.docChanges) {
-        if (element.type == DocumentChangeType.added ||
-            element.type == DocumentChangeType.modified &&
-                !chatEvents.containsKey(element.doc.id)) {
-          if (chatsMap[element.doc.id] == null) {
-            chatsMap[element.doc.id] = element.doc.data();
-
-            for (var member in element.doc.data()!['info']['members'].keys) {
-              FirebaseDatabase.instance
-                  .ref()
-                  .child('users')
-                  .child(member)
-                  .once()
-                  .then((value) {
-                Map<dynamic, dynamic> user =
-                    value.snapshot.value! as Map<dynamic, dynamic>;
-                chatsMap[element.doc.id]['members'][member] = user;
-                chatsMap[element.doc.id]['members'][member]['name'] = {
-                  'firstName': user['firstName'],
-                  'middleName': user['middleName'],
-                  'lastName': user['lastName'],
-                };
-                notifyListeners();
-              });
-            }
-          } else {
-            chatsMap[element.doc.id].addAll(element.doc.data());
-          }
-
-          var chatMessages = FirebaseFirestore.instance
-              .collection('chats')
-              .doc(element.doc.id)
-              .collection('messages')
-              // .where('sender', isNotEqualTo: FirebaseAuth.instance.currentUser!.uid)
-              .snapshots()
-              .listen((event) async {
-            event.metadata.isFromCache
-                ? print('From cache')
-                : print('From server');
-
-            print(chatsMap[element.doc.id]['messages'].keys);
-
-            for (var message in event.docChanges) {
-              if (message.type == DocumentChangeType.added &&
-                  !event.metadata.isFromCache &&
-                  message.doc.data()!['sender'] !=
-                      FirebaseAuth.instance.currentUser!.uid &&
-                  chatsMap[element.doc.id].containsKey('messages') &&
-                  !chatsMap[element.doc.id]['messages']
-                      .containsKey(message.doc.data()!['timestamp'])) {
-                FirebaseDatabase.instance
-                    .ref()
-                    .child('users')
-                    .child(message.doc.data()!['sender'])
-                    .once()
-                    .then((value) {
-                  Map<dynamic, dynamic> user =
-                      value.snapshot.value! as Map<dynamic, dynamic>;
-
-                  // print('User: ${user['firstName']} ${user['middleName']} ${user['lastName']}');
-
-                  _showChatNotification(
-                    element.doc.id,
-                    '${user['firstName']} ${user['middleName']} ${user['lastName']}',
-                    message.doc.data()!['message'],
-                    message.doc.id,
-                    user['thumbProfileImage'],
-                    'Messages',
-                    'New messages from your chats',
-                  );
-                });
-              }
-
-              if (message.type == DocumentChangeType.added ||
-                  message.type == DocumentChangeType.modified) {
-                chatsMap[element.doc.id]!['messages'][message.doc.id] =
-                    message.doc.data() as Map<String, dynamic>;
-              } else if (message.type == DocumentChangeType.removed) {
-                chatsMap[element.doc.id]!['messages'].remove(message.doc.id);
-              }
-            }
-
-            notifyListeners();
-          });
-
-          chatEvents[element.doc.id] = chatMessages;
-
-          if (chatsMap[element.doc.id].containsKey('messages') == false) {
-            chatsMap[element.doc.id]!['messages'] = {};
-            notifyListeners();
-          }
-          print("change");
-        } else if (element.type == DocumentChangeType.removed &&
-            chatEvents.containsKey(element.doc.id)) {
-          chatEvents[element.doc.id]!.cancel();
-          chatEvents.remove(element.doc.id);
-          notifyListeners();
-        }
-      }
-    });
+    _initializeMainSubscription();
   }
 
   void _initializeChatNotifications() async {
@@ -158,6 +55,147 @@ class ChatDatabase extends ChangeNotifier {
         await localChatNotif.cancel(response.id!);
       },
     );
+  }
+
+  void _initializeMainSubscription() {
+    _mainSubscription = FirebaseFirestore.instance
+        .collection('chats')
+        .where('info.members.${FirebaseAuth.instance.currentUser!.uid}',
+            isEqualTo: true)
+        .snapshots()
+        .listen((event) {
+
+      print( event.docs);
+
+
+      if (_disposed) return; // Skip if disposed
+
+      for (var element in event.docChanges) {
+        if (element.type == DocumentChangeType.added ||
+            element.type == DocumentChangeType.modified &&
+                !chatEvents.containsKey(element.doc.id)) {
+          if (chatsMap[element.doc.id] == null) {
+            chatsMap[element.doc.id] = element.doc.data();
+
+            for (var member in element.doc.data()!['info']['members'].keys) {
+              if (_disposed) return; // Skip if disposed during async operation
+
+              FirebaseDatabase.instance
+                  .ref()
+                  .child('users')
+                  .child(member)
+                  .once()
+                  .then((value) {
+                if (_disposed) {
+                  return; // Skip if disposed during async operation
+                }
+
+                Map<dynamic, dynamic> user =
+                    value.snapshot.value! as Map<dynamic, dynamic>;
+                chatsMap[element.doc.id]['members'][member] = user;
+                chatsMap[element.doc.id]['members'][member]['name'] = {
+                  'firstName': user['firstName'],
+                  'middleName': user['middleName'],
+                  'lastName': user['lastName'],
+                };
+                safeNotifyListeners();
+              });
+            }
+          } else {
+            chatsMap[element.doc.id].addAll(element.doc.data());
+          }
+
+          var chatMessages = FirebaseFirestore.instance
+              .collection('chats')
+              .doc(element.doc.id)
+              .collection('messages')
+              .snapshots()
+              .listen((event) async {
+            if (_disposed) return; // Skip if disposed
+
+            event.metadata.isFromCache
+                ? print('From cache')
+                : print('From server');
+
+            print(chatsMap[element.doc.id]['messages'].keys);
+
+            for (var message in event.docChanges) {
+              if (_disposed) break; // Break loop if disposed
+
+              if (message.type == DocumentChangeType.added &&
+                  !event.metadata.isFromCache &&
+                  message.doc.data()!['sender'] !=
+                      FirebaseAuth.instance.currentUser!.uid &&
+                  chatsMap[element.doc.id].containsKey('messages') &&
+                  !chatsMap[element.doc.id]['messages']
+                      .containsKey(message.doc.data()!['timestamp'])) {
+                FirebaseDatabase.instance
+                    .ref()
+                    .child('users')
+                    .child(message.doc.data()!['sender'])
+                    .once()
+                    .then((value) {
+                  if (_disposed) return; // Skip if disposed
+
+                  Map<dynamic, dynamic> user =
+                      value.snapshot.value! as Map<dynamic, dynamic>;
+
+                  _showChatNotification(
+                    element.doc.id,
+                    '${user['firstName']} ${user['middleName']} ${user['lastName']}',
+                    message.doc.data()!['message'],
+                    message.doc.id,
+                    user['thumbProfileImage'],
+                    'Messages',
+                    'New messages from your chats',
+                  );
+                });
+              }
+
+              if (message.type == DocumentChangeType.added ||
+                  message.type == DocumentChangeType.modified) {
+                chatsMap[element.doc.id]!['messages'][message.doc.id] =
+                    message.doc.data() as Map<String, dynamic>;
+              } else if (message.type == DocumentChangeType.removed) {
+                chatsMap[element.doc.id]!['messages'].remove(message.doc.id);
+              }
+            }
+
+            safeNotifyListeners();
+          });
+
+          chatEvents[element.doc.id] = chatMessages;
+
+          if (chatsMap[element.doc.id].containsKey('messages') == false) {
+            chatsMap[element.doc.id]!['messages'] = {};
+            safeNotifyListeners();
+          }
+          print("change");
+        } else if (element.type == DocumentChangeType.removed &&
+            chatEvents.containsKey(element.doc.id)) {
+          chatEvents[element.doc.id]!.cancel();
+          chatEvents.remove(element.doc.id);
+          safeNotifyListeners();
+        }
+      }
+    });
+  }
+
+  // Safe way to notify listeners that checks disposal state
+  void safeNotifyListeners() {
+    if (!_disposed) {
+      notifyListeners();
+    }
+  }
+
+  void updateData() {
+    print('UPDATED USER INFO');
+    safeNotifyListeners();
+  }
+
+  @override
+  void dispose() {
+   
   }
 
   Future<void> _showChatNotification(
@@ -202,9 +240,8 @@ class ChatDatabase extends ChangeNotifier {
       payload: chatId,
     );
   }
-
-  @override
-  void dispose() {}
+  // Rest of the code remains the same...
+  // (_initializeChatNotifications and _showChatNotification methods)
 }
 
 class AuctionDatabase extends ChangeNotifier {
@@ -336,6 +373,10 @@ class AuctionDatabase extends ChangeNotifier {
     });
   }
 
+  void updateData() {
+    notifyListeners();
+  }
+
   void _initializeAuctionNotifications() async {
     await localChatNotif.initialize(
       const InitializationSettings(
@@ -384,7 +425,7 @@ class AuctionDatabase extends ChangeNotifier {
   }
 
   Future<void> _showNewAuctionNotification(
-      String productName, String adminName) async {
+      String productName, String sellerName) async {
     // generate unique id for notification
     int uid = DateTime.now().millisecondsSinceEpoch;
 
@@ -392,7 +433,7 @@ class AuctionDatabase extends ChangeNotifier {
       // generate uid for notification
       uid,
       'New auction for ${productName.toUpperCase()}',
-      'Admin $adminName has created a new auction for $productName. Hurry and check it out!',
+      'Seller $sellerName has created a new auction for $productName. Hurry and check it out!',
       NotificationDetails(
           android: AndroidNotificationDetails(
         uid.toString(),
@@ -411,4 +452,186 @@ class AuctionDatabase extends ChangeNotifier {
 
   @override
   void dispose() {}
+}
+
+class ShipmentDatabase extends ChangeNotifier {
+  final Map<String, Map<String, dynamic>> _shipments = {};
+  Map<String, Map<String, dynamic>> get shipments => _shipments;
+  bool _isLoading = true;
+  bool get isLoading => _isLoading;
+  
+  StreamSubscription<QuerySnapshot>? _shipmentsSubscription;
+  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  
+  ShipmentDatabase() {
+    _initNotifications();
+    _setupShipmentsListener();
+  }
+
+  Future<void> _initNotifications() async {
+    const initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initializationSettingsIOS = DarwinInitializationSettings();
+    const initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+    await _notifications.initialize(initializationSettings);
+  }
+
+  void _setupShipmentsListener() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    _shipmentsSubscription?.cancel();
+    _shipmentsSubscription = FirebaseFirestore.instance
+        .collection('shipments')
+        .where(Filter('buyerUid', isEqualTo: user.uid))
+        .snapshots()
+        .listen((snapshot) {
+          _handleShipmentChanges(snapshot);
+        });
+  }
+
+  Future<void> _handleShipmentChanges(QuerySnapshot snapshot) async {
+    for (var change in snapshot.docChanges) {
+      switch (change.type) {
+        case DocumentChangeType.added:
+          await _handleNewShipment(change.doc);
+          break;
+        case DocumentChangeType.modified:
+          await _handleModifiedShipment(change.doc);
+          break;
+        case DocumentChangeType.removed:
+          _handleRemovedShipment(change.doc);
+          break;
+      }
+    }
+    
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> _handleNewShipment(DocumentSnapshot doc) async {
+    final shipData = doc.data() as Map<String, dynamic>;
+    await _processShipmentDocument(doc.id, shipData);
+    _showNotification(
+      'New Shipment',
+      'A new shipment has been created for ${_shipments[doc.id]?['productInfo']?['name'] ?? 'Unknown Product'}',
+    );
+  }
+
+  Future<void> _handleModifiedShipment(DocumentSnapshot doc) async {
+    final newData = doc.data() as Map<String, dynamic>;
+    final oldData = _shipments[doc.id]?['shippingInfo'] as Map<String, dynamic>?;
+    
+    if (oldData != null) {
+      final oldStatus = _getLatestStatus(oldData['status'] as Map<String, dynamic>?);
+      final newStatus = _getLatestStatus(newData['status'] as Map<String, dynamic>?);
+      
+      if (oldStatus != newStatus) {
+        await _processShipmentDocument(doc.id, newData);
+        _showNotification(
+          'Shipment Status Updated',
+          'Status changed to: $newStatus',
+        );
+      }
+    }
+  }
+
+  void _handleRemovedShipment(DocumentSnapshot doc) {
+    _shipments.remove(doc.id);
+    notifyListeners();
+  }
+
+  String _getLatestStatus(Map<String, dynamic>? statusMap) {
+    if (statusMap == null || statusMap.isEmpty) return 'Pending';
+    
+    final latestEpoch = statusMap.keys
+        .map((e) => int.tryParse(e) ?? 0)
+        .reduce((a, b) => a > b ? a : b);
+    return statusMap[latestEpoch.toString()] ?? 'Pending';
+  }
+
+  Future<void> _processShipmentDocument(String docId, Map<String, dynamic> shipData) async {
+    try {
+      // Fetch product, buyer, and auction data concurrently
+      final futures = await Future.wait([
+        FirebaseFirestore.instance
+            .collection('products')
+            .doc(shipData['sellerUid'])
+            .collection('items')
+            .doc(shipData['productUid'])
+            .get(),
+        FirebaseDatabase.instance
+            .ref()
+            .child('users/${shipData['buyerUid']}')
+            .get(),
+        FirebaseFirestore.instance
+            .collection('auctions')
+            .doc(shipData['auctionId'])
+            .get(),
+      ]);
+
+      final productDoc = futures[0] as DocumentSnapshot;
+      final buyerSnapshot = futures[1] as DataSnapshot;
+      final auctionDoc = futures[2] as DocumentSnapshot;
+
+      final Map<String, dynamic> buyerData = 
+          Map<String, dynamic>.from(buyerSnapshot.value as Map? ?? {});
+      final Map<String, dynamic> productData = 
+          Map<String, dynamic>.from(productDoc.data() as Map<String, dynamic>? ?? {});
+      final Map<String, dynamic> auctionData = 
+          Map<String, dynamic>.from(auctionDoc.data() as Map<String, dynamic>? ?? {});
+
+
+      auctionData['buyerName'] =
+          '${buyerData['firstName']} ${buyerData['middleName']} ${buyerData['lastName']}';
+      auctionData['buyerAddress'] = buyerData['address'];
+      auctionData['buyerContact'] = buyerData['number'];
+
+
+      _shipments[docId] = {
+        'buyerInfo': buyerData,
+        'productInfo': productData,
+        'shippingInfo': shipData,
+        'auctionInfo': auctionData,
+      };
+
+      notifyListeners();
+    } catch (error) {
+      debugPrint('Error processing shipment document: $error');
+    }
+  }
+
+  Future<void> _showNotification(String title, String body) async {
+    const androidDetails = AndroidNotificationDetails(
+      'shipments_channel',
+      'Shipments',
+      channelDescription: 'Notifications for shipment updates',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title,
+      body,
+      details,
+    );
+  }
+
+  @override
+  void dispose() {
+  }
 }

@@ -10,9 +10,9 @@ import 'package:intl/intl.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage(
-      {super.key, required this.adminId, required this.productId});
+      {super.key, required this.sellerUid, required this.productId});
   final String productId;
-  final String adminId;
+  final String sellerUid;
 
   @override
   State<ProductPage> createState() => _ProductPageState();
@@ -37,7 +37,7 @@ class _ProductPageState extends State<ProductPage>
       child: StreamBuilder(
         stream: FirebaseFirestore.instance
             .collection('products')
-            .doc(widget.adminId)
+            .doc(widget.sellerUid)
             .collection('items')
             .doc(widget.productId)
             .snapshots(),
@@ -168,7 +168,7 @@ class _ProductPageState extends State<ProductPage>
                                         'chat': Chat(
                                           chat: chatDatabase.chatsMap,
                                           chatMembers: [
-                                            widget.adminId,
+                                            widget.sellerUid,
                                             FirebaseAuth
                                                 .instance.currentUser!.uid
                                           ],
@@ -193,7 +193,7 @@ class _ProductPageState extends State<ProductPage>
                                   onPressed: () async {
                                     await FirebaseFirestore.instance
                                         .collection('products')
-                                        .doc(widget.adminId)
+                                        .doc(widget.sellerUid)
                                         .collection('items')
                                         .doc(widget.productId)
                                         .update({
@@ -211,7 +211,7 @@ class _ProductPageState extends State<ProductPage>
                                                     await FirebaseFirestore
                                                         .instance
                                                         .collection('products')
-                                                        .doc(widget.adminId)
+                                                        .doc(widget.sellerUid)
                                                         .collection('items')
                                                         .doc(widget.productId)
                                                         .update({

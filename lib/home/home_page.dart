@@ -3,8 +3,11 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:harvest_guard/custom/listener.dart';
 import 'package:harvest_guard/front_page.dart';
 import 'package:harvest_guard/home/auctions/auctions_page.dart';
+import 'package:harvest_guard/home/shipping/shipments_page.dart';
+import 'package:provider/provider.dart';
 
 import '../global.dart';
 import 'chats/chats_page.dart';
@@ -52,6 +55,11 @@ class HomePageState extends State<HomePage>
       ),
       label: 'Auctions',
     ),
+    const NavigationDestination(
+      selectedIcon: Icon(FluentIcons.vehicle_truck_profile_16_filled),
+      icon: Icon(FluentIcons.vehicle_truck_profile_16_regular),
+      label: 'Shipments',
+    ),
   ];
 
   final List<NavigationRailDestination> _destinationLarge = const [
@@ -82,6 +90,11 @@ class HomePageState extends State<HomePage>
       ),
       label: Text('Auctions'),
     ),
+    NavigationRailDestination(
+      selectedIcon: Icon(FluentIcons.vehicle_truck_profile_16_filled),
+      icon: Icon(FluentIcons.vehicle_truck_profile_16_regular),
+      label: Text('Shipments'),
+    ),
   ];
 
   PageController _pageController =
@@ -106,8 +119,12 @@ class HomePageState extends State<HomePage>
         return navItemHome;
       case 1:
         return navItemChats;
-      default:
+      case 2:
         return navItemAuctions;
+      case 3:
+        return navItemShipments;
+      default:
+        return navItemHome;
     }
   }
 
@@ -128,30 +145,34 @@ class HomePageState extends State<HomePage>
             '${user['firstName']} ${user['middleName']} ${user['lastName']}';
         _email = user['email'];
         _profileImage = user['profileImage'];
+
+        context.read<ChatDatabase>().updateData();
+        context.read<AuctionDatabase>().updateData();
       });
     });
-
-    
 
     super.initState();
   }
 
-
   final List<Widget> homePages = [
-  ProductsPage(
-    // key based on epoc time
-    key: Key('/home${DateTime.now().millisecondsSinceEpoch}'),
-    navigatorKey: navItemHome,
-  ),
-  ChatsPage(
-    key: const Key("/chats"),
-    navigatorKey: navItemChats,
-  ),
-  AuctionsPage(
-    key: const Key("/auctions"),
-    navigatorKey: navItemAuctions,
-  ),
-];
+    ProductsPage(
+      // key based on epoc time
+      key: Key('/home${DateTime.now().millisecondsSinceEpoch}'),
+      navigatorKey: navItemHome,
+    ),
+    ChatsPage(
+      key: const Key("/chats"),
+      navigatorKey: navItemChats,
+    ),
+    AuctionsPage(
+      key: const Key("/auctions"),
+      navigatorKey: navItemAuctions,
+    ),
+    ShippingPage(
+      key: const Key("/shipments"),
+      navigatorKey: navItemShipments,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -200,9 +221,8 @@ class HomePageState extends State<HomePage>
                   style: ButtonStyle(
                     backgroundColor:
                         WidgetStateProperty.all(Colors.transparent),
-                    padding: WidgetStateProperty.all(
-                        const EdgeInsets.symmetric(
-                            vertical: 16.0, horizontal: 25.0)),
+                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
                   icon: const Icon(FluentIcons.home_24_filled),
@@ -217,9 +237,8 @@ class HomePageState extends State<HomePage>
                   style: ButtonStyle(
                     backgroundColor:
                         WidgetStateProperty.all(Colors.transparent),
-                    padding: WidgetStateProperty.all(
-                        const EdgeInsets.symmetric(
-                            vertical: 16.0, horizontal: 25.0)),
+                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
                   icon: const Icon(FluentIcons.chat_24_filled),
@@ -235,9 +254,8 @@ class HomePageState extends State<HomePage>
                   style: ButtonStyle(
                     backgroundColor:
                         WidgetStateProperty.all(Colors.transparent),
-                    padding: WidgetStateProperty.all(
-                        const EdgeInsets.symmetric(
-                            vertical: 16.0, horizontal: 25.0)),
+                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
                   icon: const Icon(FluentIcons.shopping_bag_24_filled),
@@ -249,6 +267,23 @@ class HomePageState extends State<HomePage>
                     Navigator.pop(context);
                   },
                 ),
+                FilledButton.tonalIcon(
+                  style: ButtonStyle(
+                    backgroundColor:
+                        WidgetStateProperty.all(Colors.transparent),
+                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 25.0)),
+                    alignment: Alignment.centerLeft,
+                  ),
+                  icon: const Icon(FluentIcons.vehicle_truck_profile_24_filled),
+                  label: const Padding(
+                      padding: EdgeInsets.only(left: 5.0),
+                      child: Text('Shipments')),
+                  onPressed: () {
+                    _onItemTapped(3);
+                    Navigator.pop(context);
+                  },
+                ),
                 // add border to the bottom of the drawer
                 const Divider(),
                 // notification
@@ -256,9 +291,8 @@ class HomePageState extends State<HomePage>
                   style: ButtonStyle(
                     backgroundColor:
                         WidgetStateProperty.all(Colors.transparent),
-                    padding: WidgetStateProperty.all(
-                        const EdgeInsets.symmetric(
-                            vertical: 16.0, horizontal: 25.0)),
+                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
                   icon: const Icon(FluentIcons.alert_24_filled),
@@ -271,9 +305,8 @@ class HomePageState extends State<HomePage>
                   style: ButtonStyle(
                     backgroundColor:
                         WidgetStateProperty.all(Colors.transparent),
-                    padding: WidgetStateProperty.all(
-                        const EdgeInsets.symmetric(
-                            vertical: 16.0, horizontal: 25.0)),
+                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
                   icon: const Icon(FluentIcons.heart_24_filled),
@@ -286,9 +319,8 @@ class HomePageState extends State<HomePage>
                   style: ButtonStyle(
                     backgroundColor:
                         WidgetStateProperty.all(Colors.transparent),
-                    padding: WidgetStateProperty.all(
-                        const EdgeInsets.symmetric(
-                            vertical: 16.0, horizontal: 25.0)),
+                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
+                        vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
                   icon: const Icon(FluentIcons.settings_24_filled),
@@ -396,8 +428,8 @@ class HomePageState extends State<HomePage>
                 ),
                 const VerticalDivider(thickness: 1, width: 1),
                 Expanded(
-                  child:
-                      NewWidget(pageController: _pageController, pages: homePages),
+                  child: NewWidget(
+                      pageController: _pageController, pages: homePages),
                 )
               ],
             ),
