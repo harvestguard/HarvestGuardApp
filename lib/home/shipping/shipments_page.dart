@@ -18,7 +18,10 @@ class ShippingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final shipmentDatabase = context.watch<ShipmentDatabase>();
 
-    return Scaffold(
+    return 
+    RepaintBoundary(
+      child: 
+    Scaffold(
       body: CustomScrollView(
         scrollDirection: Axis.vertical,
         physics: const BouncingScrollPhysics(),
@@ -46,6 +49,7 @@ class ShippingPage extends StatelessWidget {
                 : _buildShippingList(context, shipmentDatabase),
           ),
         ],
+      )
       ),
     );
   }
@@ -110,6 +114,7 @@ class ShippingPage extends StatelessWidget {
                   arguments: {
                     'shipmentId': entry.key,
                     'shippingData': entry.value,
+                    'from': context,
                   },
                 );
               },

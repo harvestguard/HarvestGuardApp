@@ -38,16 +38,17 @@ class _AuctionsPageState extends State<AuctionsPage>
       '/auction',
       arguments: {
         'auctionUid': auctionUid,
-        'from': context.findAncestorWidgetOfExactType<AuctionsPage>(),
+        'from': context,
       },
     );
   }
 
-  Widget _buildAuctionGrid(BuildContext context, AuctionDatabase auctionDatabase) {
+  Widget _buildAuctionGrid(
+      BuildContext context, AuctionDatabase auctionDatabase) {
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount = screenWidth ~/ 390;
-    
-    final List<MapEntry<String, dynamic>> auctions = 
+
+    final List<MapEntry<String, dynamic>> auctions =
         auctionDatabase.auctionsMap.entries.toList();
 
     return SliverToBoxAdapter(
@@ -61,12 +62,14 @@ class _AuctionsPageState extends State<AuctionsPage>
           crossAxisSpacing: 5,
         ),
         itemCount: auctions.length,
-        itemBuilder: (context, index) => _buildAuctionCard(context, auctions[index]),
+        itemBuilder: (context, index) =>
+            _buildAuctionCard(context, auctions[index]),
       ),
     );
   }
 
-  Widget _buildAuctionCard(BuildContext context, MapEntry<String, dynamic> auction) {
+  Widget _buildAuctionCard(
+      BuildContext context, MapEntry<String, dynamic> auction) {
     final isLoading = auction.value['itemInfo'] == null;
     final bidders = _getSortedBidders(auction.value['bidUid']);
     final currentBid = _getCurrentBid(isLoading, bidders);
@@ -96,29 +99,31 @@ class _AuctionsPageState extends State<AuctionsPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    
+
     final auctionDatabase = context.watch<AuctionDatabase>();
 
-    return Scaffold(
-      body: CustomScrollView(
-        scrollDirection: Axis.vertical,
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          HomeAppBar(
-            title: 'Auctions',
-            leftIcon: IconButton(
-              icon: const Icon(FluentIcons.list_24_filled),
-              onPressed: _openDrawer,
+    return RepaintBoundary(
+      child: Scaffold(
+        body: CustomScrollView(
+          scrollDirection: Axis.vertical,
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            HomeAppBar(
+              title: 'Auctions',
+              leftIcon: IconButton(
+                icon: const Icon(FluentIcons.list_24_filled),
+                onPressed: _openDrawer,
+              ),
+              rightIcon: IconButton(
+                icon: const Icon(FluentIcons.cart_24_regular),
+                onPressed: () {
+                  // Cart functionality
+                },
+              ),
             ),
-            rightIcon: IconButton(
-              icon: const Icon(FluentIcons.cart_24_regular),
-              onPressed: () {
-                // Cart functionality
-              },
-            ),
-          ),
-          _buildAuctionGrid(context, auctionDatabase),
-        ],
+            _buildAuctionGrid(context, auctionDatabase),
+          ],
+        ),
       ),
     );
   }

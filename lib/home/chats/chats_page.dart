@@ -23,18 +23,19 @@ class _ChatsPageState extends State<ChatsPage>
     with AutomaticKeepAliveClientMixin<ChatsPage> {
   @override
   bool get wantKeepAlive => true;
-  
+
   final List<SearchInfo> _searchInfos = [];
-  final DatabaseReference _usersRef = FirebaseDatabase.instance.ref().child('users');
+  final DatabaseReference _usersRef =
+      FirebaseDatabase.instance.ref().child('users');
   late final String _currentUserUid = FirebaseAuth.instance.currentUser!.uid;
-  
+
   Future<void> _loadSearchChats() async {
     try {
       final DataSnapshot snapshot = await _usersRef.get();
       if (snapshot.value == null || snapshot.key == _currentUserUid) return;
 
       final users = snapshot.value! as Map<dynamic, dynamic>;
-      
+
       final updatedSearchInfos = users.entries
           .where((entry) => entry.key != _currentUserUid)
           .map((entry) => SearchInfo(
@@ -125,19 +126,21 @@ class _ChatsPageState extends State<ChatsPage>
     );
   }
 
-  void _navigateToChat(BuildContext context, String chatUid, ChatDatabase chatDatabase) {
+  void _navigateToChat(
+      BuildContext context, String chatUid, ChatDatabase chatDatabase) {
     Navigator.of(context).pushNamed(
       '/chat',
       arguments: {
         'chat': Chat(chat: chatDatabase.chatsMap, chatUid: chatUid),
-        'from': context.findAncestorWidgetOfExactType<ChatsPage>()!,
+        'from': context,
       },
     );
   }
 
   List<ChatInfo> _getSortedChats(ChatDatabase chatDatabase) {
     return chatDatabase.chatsMap.entries
-        .where((entry) => ChatInfo.fromMap(entry.key, entry.value).lastMessageTime.isNotEmpty)
+        .where((entry) =>
+            ChatInfo.fromMap(entry.key, entry.value).lastMessageTime.isNotEmpty)
         .map((entry) => ChatInfo.fromMap(entry.key, entry.value))
         .toList()
       ..sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
@@ -150,30 +153,32 @@ class _ChatsPageState extends State<ChatsPage>
     final chatDatabase = context.watch<ChatDatabase>();
     final sortedChats = _getSortedChats(chatDatabase);
 
-    return Scaffold(
-      body: CustomScrollView(
-        scrollDirection: Axis.vertical,
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          const HomeAppBar(
-            title: 'Chats',
-            leftIcon: _DrawerButton(),
-            rightIcon: _ProfileButton(),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: SearchChatsHeaderDelegate(
-              searchInfo: _searchInfos,
-              databaseName: 'chatSearchHistory',
-              barHintText: 'Search chats',
-              cont: context,
-              onTap: _loadSearchChats,
+    return RepaintBoundary(
+      child: Scaffold(
+        body: CustomScrollView(
+          scrollDirection: Axis.vertical,
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            const HomeAppBar(
+              title: 'Chats',
+              leftIcon: _DrawerButton(),
+              rightIcon: _ProfileButton(),
             ),
-          ),
-          sortedChats.isEmpty
-              ? _buildNoMessageView(theme)
-              : _buildChatList(sortedChats, chatDatabase),
-        ],
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: SearchChatsHeaderDelegate(
+                searchInfo: _searchInfos,
+                databaseName: 'chatSearchHistory',
+                barHintText: 'Search chats',
+                cont: context,
+                onTap: _loadSearchChats,
+              ),
+            ),
+            sortedChats.isEmpty
+                ? _buildNoMessageView(theme)
+                : _buildChatList(sortedChats, chatDatabase),
+          ],
+        ),
       ),
     );
   }
@@ -217,7 +222,7 @@ class _ChatListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return ListTile(
       leading: CircleAvatar(
         backgroundImage: NetworkImage(chatInfo.thumbProfileImage),

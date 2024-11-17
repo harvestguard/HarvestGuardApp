@@ -342,7 +342,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       Navigator.of(context).pop();
                       Navigator.of(context).pushNamedAndRemoveUntil(
                         '/home',
-                        arguments: {'from': widget},
+                        arguments: {'from': context},
                         (Route<dynamic> route) => false,
                       );
 

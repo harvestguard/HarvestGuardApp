@@ -1,46 +1,112 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:ui' as ui;
 
 class SlidePageRoute<T> extends PageRouteBuilder<T> {
   final WidgetBuilder builder;
-  final Widget oldScreen;
+  final BuildContext previousContext;
   @override
   final RouteSettings settings;
 
-  SlidePageRoute(
-      {required this.builder, required this.oldScreen, required this.settings})
-      : super(
+  SlidePageRoute({
+    required this.builder,
+    required this.previousContext,
+    required this.settings,
+  }) : super(
           settings: settings,
-          pageBuilder: (BuildContext context, Animation<double> animation,
-              Animation<double> secondaryAnimation) {
-            return builder(context);
-          },
-          transitionsBuilder: (BuildContext context,
-              Animation<double> animation,
-              Animation<double> secondaryAnimation,
-              Widget child) {
+          transitionDuration: const Duration(milliseconds: 400),
+          reverseTransitionDuration: const Duration(milliseconds: 400),
+          pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0);
+            const end = Offset.zero;
+            const oldScreenBegin = Offset.zero;
+            const oldScreenEnd = Offset(-0.3, 0.0);
+            const curve = Curves.easeInOutCubic;
+
+            var slideAnimation = Tween(
+              begin: begin,
+              end: end,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: curve,
+            ));
+
+            var oldScreenAnimation = Tween(
+              begin: oldScreenBegin,
+              end: oldScreenEnd,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: curve,
+            ));
+
+            var scaleAnimation = Tween(
+              begin: 1.0,
+              end: 0.95,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: curve,
+            ));
+
+
+            Future<ui.Image?> _captureScreen() async {
+              try {
+                // Find the render object in the tree
+                final RenderObject? renderObject = previousContext.findRenderObject();
+                if (renderObject == null) return null;
+
+                // Convert it to a RepaintBoundary if possible
+                if (renderObject is! RenderRepaintBoundary) {
+                  debugPrint('Warning: Found render object is not a RenderRepaintBoundary');
+                  return null;
+                }
+
+                // Capture the image
+                final ui.Image image = await renderObject.toImage(
+                  pixelRatio: WidgetsBinding.instance.window.devicePixelRatio,
+                );
+                return image;
+              } catch (e) {
+                debugPrint('Failed to capture screenshot: $e');
+                return null;
+              }
+            }
+
+            Widget _buildPreviousScreen(
+              Animation<Offset> position,
+              Animation<double> scale,
+            ) {
+              return FutureBuilder<ui.Image?>(
+                future: _captureScreen(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return SlideTransition(
+                    position: position,
+                    child: Transform.scale(
+                      scale: scale.value,
+                      child: RawImage(
+                        image: snapshot.data,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
+
             return Stack(
-              children: <Widget>[
-                SlideTransition(
-                  position: Tween<Offset>(
-                    begin: Offset.zero,
-                    end: const Offset(-0.5, 0.0),
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves
-                        .fastOutSlowIn, // Adjust the curve for smoother animation
-                  )),
-                    child: const ColoredBox(color: Colors.transparent),
-                  // child: oldScreen,
+              children: [
+                // Screenshot of old screen with scale animation
+                _buildPreviousScreen(
+                  oldScreenAnimation,
+                  scaleAnimation,
                 ),
+                // New screen with shadow and slide animation
                 SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(1.0, 0.0),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves
-                        .fastOutSlowIn, // Adjust the curve for smoother animation
-                  )),
+                  position: slideAnimation,
                   child: Container(
                     decoration: BoxDecoration(
                       boxShadow: [
@@ -48,7 +114,7 @@ class SlidePageRoute<T> extends PageRouteBuilder<T> {
                           color: Colors.black.withOpacity(0.2),
                           blurRadius: 25.0,
                           spreadRadius: 2.0,
-                          offset: const Offset(0, 2),
+                          offset: const Offset(-2, 0),
                         ),
                       ],
                     ),
@@ -58,101 +124,21 @@ class SlidePageRoute<T> extends PageRouteBuilder<T> {
               ],
             );
           },
-        );
-}
-
-class SlideRightPageRoute<T> extends PageRouteBuilder<T> {
-  final WidgetBuilder builder;
-  final Widget oldScreen;
-  @override
-  final RouteSettings settings;
-
-  SlideRightPageRoute(
-      {required this.builder, required this.oldScreen, required this.settings})
-      : super(
-          settings: settings,
-          pageBuilder: (BuildContext context, Animation<double> animation,
-              Animation<double> secondaryAnimation) {
-            return builder(context);
-          },
-          transitionsBuilder: (BuildContext context,
-              Animation<double> animation,
-              Animation<double> secondaryAnimation,
-              Widget child) {
-
-                // copy the child
-                
-            return Stack(
-              children: <Widget>[
-                SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(-0.5, 0.0),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves
-                        .fastOutSlowIn, // Adjust the curve for smoother animation
-                  )),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 25.0,
-                          spreadRadius: 2.0,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const ColoredBox(color: Colors.transparent),
-                    // child: oldScreen,
-                  ),
-                ),
-                SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(-0.5, 0.0),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves
-                        .fastOutSlowIn, // Adjust the curve for smoother animation
-                  )),
-                  child: child,
-                ),
-              ],
-            );
-          },
-        );
-}
-
-
-
-class CustomPageRouteBuilder<T> extends PageRoute<T> {
-  final RoutePageBuilder pageBuilder;
-  final PageTransitionsBuilder matchingBuilder = const CupertinoPageTransitionsBuilder(); // Default iOS/macOS (to get the swipe right to go back gesture)
-  // final PageTransitionsBuilder matchingBuilder = const FadeUpwardsPageTransitionsBuilder(); // Default Android/Linux/Windows
-
-  CustomPageRouteBuilder({required this.pageBuilder});
-
-  @override
-  Color? get barrierColor => null;
-
-  @override
-  String? get barrierLabel => null;
-
-  @override
-  Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
-    return pageBuilder(context, animation, secondaryAnimation);
+        ) {
+    // Initialize screenshot in constructor body
   }
+
+  
 
   @override
   bool get maintainState => true;
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 900); // Can give custom Duration, unlike in MaterialPageRoute
+  bool get fullscreenDialog => false;
 
   @override
-  Widget buildTransitions(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
-    return matchingBuilder.buildTransitions<T>(this, context, animation, secondaryAnimation, child);
-  }
+  bool canTransitionTo(TransitionRoute<dynamic> nextRoute) => true;
+
+  @override
+  bool canTransitionFrom(TransitionRoute<dynamic> previousRoute) => true;
 }

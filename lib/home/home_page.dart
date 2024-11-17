@@ -331,7 +331,7 @@ class HomePageState extends State<HomePage>
                     Navigator.of(context).pushNamed(
                       '/settings',
                       arguments: {
-                        'from': widget,
+                        'from': context,
                       },
                     );
                   },
@@ -399,7 +399,10 @@ class HomePageState extends State<HomePage>
       ),
     );
 
-    return isSmallScreen
+    return
+    RepaintBoundary(
+      child: 
+      isSmallScreen
         ? Scaffold(
             drawer: drawer,
             key: scaffoldKey,
@@ -432,6 +435,7 @@ class HomePageState extends State<HomePage>
                       pageController: _pageController, pages: homePages),
                 )
               ],
+            ),
             ),
           );
   }

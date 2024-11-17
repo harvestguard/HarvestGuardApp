@@ -19,7 +19,6 @@ class ProductsPage extends StatefulWidget {
   State<ProductsPage> createState() => _ProductsPageState();
 }
 
-
 class _ProductsPageState extends State<ProductsPage>
     with AutomaticKeepAliveClientMixin<ProductsPage> {
   @override
@@ -113,9 +112,9 @@ class _ProductsPageState extends State<ProductsPage>
     super.build(context);
     final settingsProvider = Provider.of<SettingsProvider>(context);
 
-
-    return Scaffold(
-        body: CustomScrollView(
+    return RepaintBoundary(
+        child: Scaffold(
+            body: CustomScrollView(
       physics: const BouncingScrollPhysics(),
       controller: _scrollController,
       scrollDirection: Axis.vertical,
@@ -222,7 +221,8 @@ class _ProductsPageState extends State<ProductsPage>
                                           values: settingsProvider.priceFilter,
                                           onChanged: (RangeValues values) {
                                             setState(() {
-                                              settingsProvider.setPriceFilter(values);
+                                              settingsProvider
+                                                  .setPriceFilter(values);
                                             });
                                           },
                                           min: 0,
@@ -235,10 +235,12 @@ class _ProductsPageState extends State<ProductsPage>
                                         ),
                                         const Text('Quantity'),
                                         RangeSlider(
-                                          values: settingsProvider.quantityFilter,
+                                          values:
+                                              settingsProvider.quantityFilter,
                                           onChanged: (RangeValues values) {
                                             setState(() {
-                                              settingsProvider.setQuantityFilter(values);
+                                              settingsProvider
+                                                  .setQuantityFilter(values);
                                             });
                                           },
                                           min: 0,
@@ -260,33 +262,43 @@ class _ProductsPageState extends State<ProductsPage>
                                           children: [
                                             FilterChip(
                                               label: const Text('All'),
-                                              selected: settingsProvider.favoriteFilters == FavoriteFilter.all,
+                                              selected: settingsProvider
+                                                      .favoriteFilters ==
+                                                  FavoriteFilter.all,
                                               onSelected: (selected) {
-                                                setState(() =>
-                                                    settingsProvider.setFavoriteFilter(FavoriteFilter.all));
+                                                setState(() => settingsProvider
+                                                    .setFavoriteFilter(
+                                                        FavoriteFilter.all));
                                               },
                                             ),
                                             FilterChip(
                                               label: const Text('Favorites'),
-                                              selected: settingsProvider.favoriteFilters == FavoriteFilter.favorites,
+                                              selected: settingsProvider
+                                                      .favoriteFilters ==
+                                                  FavoriteFilter.favorites,
                                               onSelected: (selected) {
-                                                setState(() =>
-                                                    settingsProvider.setFavoriteFilter(FavoriteFilter.favorites));
+                                                setState(() => settingsProvider
+                                                    .setFavoriteFilter(
+                                                        FavoriteFilter
+                                                            .favorites));
                                               },
                                             ),
                                             FilterChip(
                                               label:
                                                   const Text('Not Favorites'),
-                                              selected: settingsProvider.favoriteFilters == FavoriteFilter.notFavorites,
+                                              selected: settingsProvider
+                                                      .favoriteFilters ==
+                                                  FavoriteFilter.notFavorites,
                                               onSelected: (selected) {
-                                                setState(() =>
-                                                    settingsProvider.setFavoriteFilter(FavoriteFilter.notFavorites) );
+                                                setState(() => settingsProvider
+                                                    .setFavoriteFilter(
+                                                        FavoriteFilter
+                                                            .notFavorites));
                                               },
                                             ),
                                           ],
                                         ),
                                         const SizedBox(height: 20),
-
                                       ],
                                     )));
                           },
@@ -344,7 +356,8 @@ class _ProductsPageState extends State<ProductsPage>
                       return Stack(
                         children: [
                           Card(
-                            surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
+                            surfaceTintColor:
+                                Theme.of(context).colorScheme.surfaceTint,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -374,7 +387,6 @@ class _ProductsPageState extends State<ProductsPage>
                                             ?.copyWith(
                                               overflow: TextOverflow.ellipsis,
                                             ),
-
                                       ),
                                       Text(
                                         '₱${(item['price'] * 1.00).toStringAsFixed(2)} per item',
@@ -382,10 +394,10 @@ class _ProductsPageState extends State<ProductsPage>
                                             .textTheme
                                             .bodySmall!
                                             .copyWith(
-                                              overflow: TextOverflow.ellipsis,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary),
+                                                overflow: TextOverflow.ellipsis,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary),
                                       ),
                                     ],
                                   ),
@@ -420,6 +432,6 @@ class _ProductsPageState extends State<ProductsPage>
           }),
         )
       ],
-    ));
+    )));
   }
 }

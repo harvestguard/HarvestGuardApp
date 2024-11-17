@@ -125,7 +125,7 @@ class _LoginPageState extends State<LoginPage> {
         // clear the stack and navigate to the home page
         Navigator.of(context).pushNamedAndRemoveUntil(
           '/home',
-          arguments: {'from': widget},
+          arguments: {'from': context},
           (Route<dynamic> route) => false,
         );
 

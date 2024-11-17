@@ -40,7 +40,7 @@ class _ChatsPageState extends State<ChatPage>
     final chats = context.watch<ChatDatabase>();
     final auctions = context.watch<AuctionDatabase>();
 
-    return Builder(builder: (context) {
+    return RepaintBoundary(child: Builder(builder: (context) {
       return Builder(builder: (context) {
         return FutureBuilder(
             future: getAddress(
@@ -88,8 +88,8 @@ class _ChatsPageState extends State<ChatPage>
                               .toUpperCase();
                     }
 
-                    var nameMap = chats.chatsMap[widget.chat.chatUid]
-                        ['members'][widget.chat.receiver]['name'];
+                    var nameMap = chats.chatsMap[widget.chat.chatUid]['members']
+                        [widget.chat.receiver]['name'];
                     _nameReceiver = nameMap != null
                         ? '${nameMap['firstName']} ${nameMap['middleName']} ${nameMap['lastName']}'
                         : '';
@@ -294,12 +294,11 @@ class _ChatsPageState extends State<ChatPage>
                                               _nameSender;
                                           file['auctionInfo']['sellerName'] =
                                               _nameReceiver;
-                                          file['auctionInfo']['buyerContact'] =
-                                              chats.chatsMap[widget
-                                                              .chat.chatUid]
-                                                          ['members']
-                                                      [widget.chat.sender]
-                                                  ['number'];
+                                          file['auctionInfo']
+                                              ['buyerContact'] = chats.chatsMap[
+                                                      widget.chat.chatUid]
+                                                  ['members']
+                                              [widget.chat.sender]['number'];
 
                                           return ChatWidget(
                                             chatUid: widget.chat.chatUid!,
@@ -409,6 +408,6 @@ class _ChatsPageState extends State<ChatPage>
                   });
             });
       });
-    });
+    }));
   }
 }

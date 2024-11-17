@@ -222,7 +222,10 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
       );
     }
 
-    return Scaffold(
+    return
+    RepaintBoundary(
+      child: 
+     Scaffold(
       body: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           controller: _scrollController,
@@ -400,7 +403,7 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
                 ),
               ),
             ),
-          ]),
+          ]),)
     );
   }
 

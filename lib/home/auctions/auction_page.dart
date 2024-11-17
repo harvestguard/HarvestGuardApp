@@ -61,7 +61,8 @@ class _ChatsPageState extends State<AuctionPage>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return Scaffold(
+    return RepaintBoundary(
+        child: Scaffold(
       body: StreamBuilder(
         stream: _auctions,
         builder: (context, AsyncSnapshot<Map<String, dynamic>> snapshot) {
@@ -461,8 +462,7 @@ class _ChatsPageState extends State<AuctionPage>
                                     FirebaseAuth.instance.currentUser!.uid
                                   ],
                                 ),
-                                'from': context.findAncestorWidgetOfExactType<
-                                    AuctionPage>()!,
+                                'from': context,
                               },
                             );
                           },
@@ -626,6 +626,6 @@ class _ChatsPageState extends State<AuctionPage>
           );
         },
       ),
-    );
+    ));
   }
 }

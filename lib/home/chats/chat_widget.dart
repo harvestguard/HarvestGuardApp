@@ -205,9 +205,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                               arguments: {
                                                 'auctionUid': widget
                                                     .file!['data']['auctionId'],
-                                                'from': context
-                                                    .findAncestorWidgetOfExactType<
-                                                        ChatPage>(),
+                                                'from': context,
                                               },
                                             );
                                           });
@@ -228,9 +226,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                             arguments: {
                                               'auctionUid': widget.file!['data']
                                                   ['auctionId'],
-                                              'from': context
-                                                  .findAncestorWidgetOfExactType<
-                                                      ChatPage>(),
+                                              'from': context,
                                             },
                                           );
                                         },
@@ -427,6 +423,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                           arguments: {
                                                             'shipmentId': widget.file!['data']['shipmentId'],
                                                             'shippingData': widget.file!['data'],
+                                                            'from': context,
                                                           },
                                                         );
                                                       }),
