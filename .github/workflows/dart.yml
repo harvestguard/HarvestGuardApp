@@ -13,9 +13,12 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history for all tags and branches
           
-      - name: Get Latest Tag
-        id: get-latest-tag
+      - name: Generate unique version tag
+        id: generate-tag
         run: |
+          # Get current timestamp in YYMMDD.HHMM format
+          timestamp=$(date +'%y%m%d.%H%M')
+          
           # Get the latest tag, default to v0.0.0 if no tags exist
           latest_tag=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "v0.0.0")
           echo "Latest tag: $latest_tag"
@@ -29,7 +32,9 @@ jobs:
           
           # Increment patch version
           new_patch=$((patch + 1))
-          new_tag="v$major.$minor.$new_patch"
+          
+          # Combine version with timestamp
+          new_tag="v$major.$minor.$new_patch-$timestamp"
           
           echo "NEW_TAG=$new_tag" >> $GITHUB_ENV
           echo "New tag will be: $new_tag"
