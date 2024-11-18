@@ -45,8 +45,7 @@ jobs:
 
       - name: Update version in pubspec.yaml
         run: |
-          BUILD_NUMBER=${{ env.NEW_VERSION }}
-          sed -i "" "s/\(version: [0-9.]*+\)[0-9]*/\1$BUILD_NUMBER/" pubspec.yaml
+          sed -i "s/^version: .*/version: ${{ env.NEW_VERSION }}/" pubspec.yaml
           cat pubspec.yaml | grep version:
 
       - uses: actions/setup-java@v3.12.0
