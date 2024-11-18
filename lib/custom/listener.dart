@@ -516,7 +516,7 @@ class ShipmentDatabase extends ChangeNotifier {
     await _processShipmentDocument(doc.id, shipData);
     _showNotification(
       'New Shipment',
-      'A new shipment has been created for ${_shipments[doc.id]?['productInfo']?['name'] ?? 'Unknown Product'}',
+      'A new shipment has been created for ${_shipments[doc.id]?['productInfo']?['item'] ?? 'Unknown Product'}',
     );
   }
 
