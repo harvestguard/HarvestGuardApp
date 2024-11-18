@@ -16,8 +16,8 @@ jobs:
       - name: Generate unique version tag
         id: generate-tag
         run: |
-          # Get current timestamp in YYMMDD.HHMM format
-          timestamp=$(date +'%y%m%d.%H%M')
+          # Get current timestamp in YY.MM.DD format
+          timestamp=$(date +'%y.%m.%d')
           
           # Get the latest tag, default to v0.0.0 if no tags exist
           latest_tag=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "v0.0.0")
