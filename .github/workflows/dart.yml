@@ -43,6 +43,12 @@ jobs:
           echo "New tag will be: $new_tag"
           echo "New version will be: $new_version+$timestamp"
 
+      - name: Update version in pubspec.yaml
+        run: |
+          BUILD_NUMBER=${{ env.NEW_VERSION }}
+          sed -i "" "s/\(version: [0-9.]*+\)[0-9]*/\1$BUILD_NUMBER/" pubspec.yaml
+          cat pubspec.yaml | grep version:
+
       - uses: actions/setup-java@v3.12.0
         with:
           distribution: 'oracle'
@@ -53,7 +59,7 @@ jobs:
           channel: 'stable'
 
       - run: flutter pub get
-      - run: flutter build apk --release --build-number=${{ env.NEW_VERSION }}
+      - run: flutter build apk --release
 
       - name: Push to Releases
         uses: ncipollo/release-action@v1
