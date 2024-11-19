@@ -23,8 +23,8 @@ jobs:
           latest_tag=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "v0.0.0")
           echo "Latest tag: $latest_tag"
           
-          # Extract version numbers
-          version=$(echo $latest_tag | sed 's/v//')
+          # Extract version numbers (only take the part before any hyphen)
+          version=$(echo $latest_tag | sed 's/v//' | cut -d'-' -f1)
           IFS='.' read -ra VERSION_PARTS <<< "$version"
           major=${VERSION_PARTS[0]:-0}
           minor=${VERSION_PARTS[1]:-0}
