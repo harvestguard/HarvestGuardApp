@@ -449,41 +449,43 @@ class _ChatsPageState extends State<AuctionPage>
                           ],
                         ),
                         const SizedBox(height: 25.0),
-                        Center(
-                            child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).pushNamed(
-                              '/chat',
-                              arguments: {
-                                'chat': Chat(
-                                  chat: chatDatabase.chatsMap,
-                                  chatMembers: [
-                                    docs['adminUid'],
-                                    FirebaseAuth.instance.currentUser!.uid
-                                  ],
-                                ),
-                                'from': context,
-                              },
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            surfaceTintColor:
-                                Theme.of(context).colorScheme.surfaceTint,
-                            fixedSize: const Size(double.infinity, 50.0),
-                          ),
-                          icon: const Icon(FluentIcons.chat_16_filled),
-                          label: const Text('Chat the seller'),
-                        )),
-                        SizedBox(
-                            height: MediaQuery.of(context).padding.bottom +
-                                (countdown[0] == 'Ends in' ? 120.0 : 20.0)),
+                        if (FirebaseAuth.instance.currentUser != null)
+                          Center(
+                              child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).pushNamed(
+                                '/chat',
+                                arguments: {
+                                  'chat': Chat(
+                                    chat: chatDatabase.chatsMap,
+                                    chatMembers: [
+                                      docs['adminUid'],
+                                      FirebaseAuth.instance.currentUser!.uid
+                                    ],
+                                  ),
+                                  'from': context,
+                                },
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              surfaceTintColor:
+                                  Theme.of(context).colorScheme.surfaceTint,
+                              fixedSize: const Size(double.infinity, 50.0),
+                            ),
+                            icon: const Icon(FluentIcons.chat_16_filled),
+                            label: const Text('Chat the seller'),
+                          )),
+                          SizedBox(
+                              height: MediaQuery.of(context).padding.bottom +
+                                  (countdown[0] == 'Ends in' ? 120.0 : 20.0)),
                       ],
                     ),
                   ))
                 ],
               ),
 
-              countdown[0] == 'Ends in'
+              countdown[0] == 'Ends in' &&
+                      FirebaseAuth.instance.currentUser != null
                   ? Positioned(
                       bottom: 20 + MediaQuery.of(context).padding.bottom,
                       right: 20,

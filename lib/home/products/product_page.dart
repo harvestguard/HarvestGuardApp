@@ -153,122 +153,123 @@ class _ProductPageState extends State<ProductPage>
                             const SizedBox(height: 15.0),
                             const Divider(),
                             const SizedBox(height: 15.0),
-                            SizedBox(
-                                width: double.infinity,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      ElevatedButton.icon(
-                                        onPressed: () {
-                                          Navigator.of(context).pushNamed(
-                                            '/chat',
-                                            arguments: {
-                                              'chat': Chat(
-                                                chat: chatDatabase.chatsMap,
-                                                chatMembers: [
-                                                  widget.sellerUid,
-                                                  FirebaseAuth
-                                                      .instance.currentUser!.uid
-                                                ],
-                                              ),
-                                              'from': context,
-                                            },
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          surfaceTintColor: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceTint,
-                                          minimumSize: const Size(250.0, 50.0),
+                            if (FirebaseAuth.instance.currentUser != null)
+                              SizedBox(
+                                  width: double.infinity,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        ElevatedButton.icon(
+                                          onPressed: () {
+                                            Navigator.of(context).pushNamed(
+                                              '/chat',
+                                              arguments: {
+                                                'chat': Chat(
+                                                  chat: chatDatabase.chatsMap,
+                                                  chatMembers: [
+                                                    widget.sellerUid,
+                                                    FirebaseAuth
+                                                        .instance.currentUser!.uid
+                                                  ],
+                                                ),
+                                                'from': context,
+                                              },
+                                            );
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            surfaceTintColor: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceTint,
+                                            minimumSize: const Size(250.0, 50.0),
+                                          ),
+                                          icon: const Icon(
+                                              FluentIcons.chat_24_filled),
+                                          label: const Text('Chat with Seller'),
                                         ),
-                                        icon: const Icon(
-                                            FluentIcons.chat_24_filled),
-                                        label: const Text('Chat with Seller'),
-                                      ),
-                                      const SizedBox(height: 16.0),
-                                      ElevatedButton.icon(
-                                        onPressed: () async {
-                                          await FirebaseFirestore.instance
-                                              .collection('products')
-                                              .doc(widget.sellerUid)
-                                              .collection('items')
-                                              .doc(widget.productId)
-                                              .update({
-                                            'isFavorite': isFavorite =
-                                                !isFavorite
-                                          }).then((value) =>
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(isFavorite
-                                                          ? 'Added to favorites'
-                                                          : 'Removed from favorites'),
-                                                      action: SnackBarAction(
-                                                        label: 'Undo',
-                                                        onPressed: () async {
-                                                          await FirebaseFirestore
-                                                              .instance
-                                                              .collection(
-                                                                  'products')
-                                                              .doc(widget
-                                                                  .sellerUid)
-                                                              .collection(
-                                                                  'items')
-                                                              .doc(widget
-                                                                  .productId)
-                                                              .update({
-                                                            'isFavorite':
-                                                                isFavorite =
-                                                                    !isFavorite
-                                                          }).then((value) =>
-                                                                  ScaffoldMessenger.of(
-                                                                          context)
-                                                                      .showSnackBar(
-                                                                    const SnackBar(
-                                                                      content: Text(
-                                                                          'Undo successful'),
-                                                                    ),
-                                                                  ));
-                                                        },
+                                        const SizedBox(height: 16.0),
+                                        ElevatedButton.icon(
+                                          onPressed: () async {
+                                            await FirebaseFirestore.instance
+                                                .collection('products')
+                                                .doc(widget.sellerUid)
+                                                .collection('items')
+                                                .doc(widget.productId)
+                                                .update({
+                                              'isFavorite': isFavorite =
+                                                  !isFavorite
+                                            }).then((value) =>
+                                                    ScaffoldMessenger.of(context)
+                                                        .showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(isFavorite
+                                                            ? 'Added to favorites'
+                                                            : 'Removed from favorites'),
+                                                        action: SnackBarAction(
+                                                          label: 'Undo',
+                                                          onPressed: () async {
+                                                            await FirebaseFirestore
+                                                                .instance
+                                                                .collection(
+                                                                    'products')
+                                                                .doc(widget
+                                                                    .sellerUid)
+                                                                .collection(
+                                                                    'items')
+                                                                .doc(widget
+                                                                    .productId)
+                                                                .update({
+                                                              'isFavorite':
+                                                                  isFavorite =
+                                                                      !isFavorite
+                                                            }).then((value) =>
+                                                                    ScaffoldMessenger.of(
+                                                                            context)
+                                                                        .showSnackBar(
+                                                                      const SnackBar(
+                                                                        content: Text(
+                                                                            'Undo successful'),
+                                                                      ),
+                                                                    ));
+                                                          },
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ));
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          surfaceTintColor: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceTint,
-                                          minimumSize: const Size(250.0, 50.0),
+                                                    ));
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            surfaceTintColor: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceTint,
+                                            minimumSize: const Size(250.0, 50.0),
+                                          ),
+                                          icon: Icon(isFavorite
+                                              ? FluentIcons.star_24_filled
+                                              : FluentIcons.star_24_regular),
+                                          label: Text(isFavorite
+                                              ? 'Remove from Favorites'
+                                              : 'Add to Favorites'),
                                         ),
-                                        icon: Icon(isFavorite
-                                            ? FluentIcons.star_24_filled
-                                            : FluentIcons.star_24_regular),
-                                        label: Text(isFavorite
-                                            ? 'Remove from Favorites'
-                                            : 'Add to Favorites'),
-                                      ),
-                                      const SizedBox(height: 16.0),
-                                      ElevatedButton.icon(
-                                        onPressed: () {
-                                          // Notify me
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          surfaceTintColor: Theme.of(context)
-                                              .colorScheme
-                                              .surfaceTint,
-                                          minimumSize: const Size(250.0, 50.0),
+                                        const SizedBox(height: 16.0),
+                                        ElevatedButton.icon(
+                                          onPressed: () {
+                                            // Notify me
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            surfaceTintColor: Theme.of(context)
+                                                .colorScheme
+                                                .surfaceTint,
+                                            minimumSize: const Size(250.0, 50.0),
+                                          ),
+                                          icon: const Icon(
+                                              FluentIcons.alert_24_filled),
+                                          label: const Text(
+                                              'Notify me for auctions'),
                                         ),
-                                        icon: const Icon(
-                                            FluentIcons.alert_24_filled),
-                                        label: const Text(
-                                            'Notify me for auctions'),
-                                      ),
-                                    ],
-                                  ),
-                                ))
+                                      ],
+                                    ),
+                                  ))
                           ],
                         ),
                       ),

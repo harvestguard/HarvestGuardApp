@@ -12,6 +12,7 @@ import 'package:harvest_guard/front_page/login_page.dart';
 import 'package:harvest_guard/front_page/register_page.dart';
 import 'package:harvest_guard/home/auctions/auction_page.dart';
 import 'package:harvest_guard/home/chats/chat_page.dart';
+import 'package:harvest_guard/home/guest_home_page.dart';
 import 'package:harvest_guard/home/shipping/shipment_page.dart';
 import 'package:harvest_guard/home/shipping/shipments_page.dart';
 import 'package:harvest_guard/services/chat.dart';
@@ -178,6 +179,11 @@ class MyApp extends StatelessWidget {
                                           ],
                                           child: const HomePage(),
                                         ),
+                                    previousContext: context,
+                                    settings: settings);
+                              case '/guest-home':
+                                return SlidePageRoute(
+                                    builder: (_) => const GuestHomePage(),
                                     previousContext: context,
                                     settings: settings);
                               case '/delivery-tracking':

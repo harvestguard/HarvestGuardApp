@@ -58,7 +58,7 @@ class AuctionCard extends StatelessWidget {
             return SizedBox(
               height: height ??
                   constraints
-                      .maxHeight, // Use provided height or expand to parent
+                      .maxHeight + 10, // Use provided height or expand to parent
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

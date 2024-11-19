@@ -99,25 +99,7 @@ class _InitialPageState extends State<InitialPage> {
                       width: 200,
                       height: 50,
                       child: FilledButton.tonal(
-                        // onPressed: () => Navigator.pushNamed(context, '/home', arguments: {'from': widget}),
-                        onPressed: () =>
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: const Text('Coming Soon!'),
-                                content: const Text('This feature is not yet available. Please log-in to continue.'),
-                                actions: <Widget>[
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: const Text('OK'),
-                                  ),
-                                ],
-                              );
-                            },
-                        ),
+                        onPressed: () => Navigator.pushNamed(context, '/guest-home', arguments: {'from': widget}),
                         child: const Text('LOG-IN as a GUEST'),
                       ),
                     ),
