@@ -47,9 +47,9 @@ class _InitialPageState extends State<InitialPage> {
                             ),
                             indicatorPadding: 30.0,
                             images: [
-                              'assets/front_page_images/farmer_0.jpg',
-                              'assets/front_page_images/farmer_1.jpg',
-                              'assets/front_page_images/farmer_2.jpg',
+                              'assets/front_page_images/farmer_3.jpg',
+                              'assets/front_page_images/farmer_4.jpg',
+                              'assets/front_page_images/farmer_5.jpg',
                             ]),
                         Positioned(
                           top: MediaQuery.of(context).padding.bottom + 30,
