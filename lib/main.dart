@@ -1,10 +1,8 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:harvest_guard/custom/listener.dart';
 import 'package:harvest_guard/firebase_options.dart';
@@ -14,11 +12,11 @@ import 'package:harvest_guard/home/auctions/auction_page.dart';
 import 'package:harvest_guard/home/chats/chat_page.dart';
 import 'package:harvest_guard/home/guest_home_page.dart';
 import 'package:harvest_guard/home/shipping/shipment_page.dart';
-import 'package:harvest_guard/home/shipping/shipments_page.dart';
 import 'package:harvest_guard/services/chat.dart';
 import 'package:harvest_guard/settings/settings_page.dart';
 import 'package:harvest_guard/slide_page.dart';
 import 'package:harvest_guard/theme.dart';
+import 'package:harvest_guard/version_checker.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'settings/settings_provider.dart';
@@ -62,18 +60,29 @@ Future<void> main() async {
     print("Database already exists at $path");
   }
 
+
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       systemNavigationBarColor: Colors.transparent,
       systemNavigationBarDividerColor: Colors.transparent));
-  runApp(const MyApp());
+
+
+  runApp(const MaterialApp(home: MyApp(), debugShowCheckedModeBanner: false));
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  // Initialize notifications
+  await VersionChecker.initNotifications();
+
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+
   @override
   Widget build(BuildContext context) {
+    if (Platform.isAndroid) {
+      VersionChecker.checkForUpdate(context);
+    }
     return RepaintBoundary(
       child:  ChangeNotifierProvider(
         create: (context) => ChatDatabase(),

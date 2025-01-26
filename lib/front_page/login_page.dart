@@ -83,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
 
       
       print(
-          'isSeller: ${isSeller}, isDeliveryAgent: ${isDeliveryAgent}, isSuperAdmin: ${isSuperAdmin}');
+          'isSeller: $isSeller, isDeliveryAgent: $isDeliveryAgent, isSuperAdmin: $isSuperAdmin');
 
 
       if (isSeller != null || isDeliveryAgent != null || isSuperAdmin != null) {

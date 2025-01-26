@@ -49,7 +49,7 @@ class SlidePageRoute<T> extends PageRouteBuilder<T> {
             ));
 
 
-            Future<ui.Image?> _captureScreen() async {
+            Future<ui.Image?> captureScreen() async {
               try {
                 // Find the render object in the tree
                 final RenderObject? renderObject = previousContext.findRenderObject();
@@ -72,12 +72,12 @@ class SlidePageRoute<T> extends PageRouteBuilder<T> {
               }
             }
 
-            Widget _buildPreviousScreen(
+            Widget buildPreviousScreen(
               Animation<Offset> position,
               Animation<double> scale,
             ) {
               return FutureBuilder<ui.Image?>(
-                future: _captureScreen(),
+                future: captureScreen(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const SizedBox.shrink();
@@ -100,7 +100,7 @@ class SlidePageRoute<T> extends PageRouteBuilder<T> {
             return Stack(
               children: [
                 // Screenshot of old screen with scale animation
-                _buildPreviousScreen(
+                buildPreviousScreen(
                   oldScreenAnimation,
                   scaleAnimation,
                 ),

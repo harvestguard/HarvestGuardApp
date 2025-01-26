@@ -116,8 +116,8 @@ class GuestHomePageState extends State<GuestHomePage>
               children: [
                 FilledButton.tonalIcon(
                   style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Colors.transparent),
-                    padding: MaterialStateProperty.all(const EdgeInsets.symmetric(
+                    backgroundColor: WidgetStateProperty.all(Colors.transparent),
+                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
                         vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
@@ -131,8 +131,8 @@ class GuestHomePageState extends State<GuestHomePage>
                 ),
                 FilledButton.tonalIcon(
                   style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Colors.transparent),
-                    padding: MaterialStateProperty.all(const EdgeInsets.symmetric(
+                    backgroundColor: WidgetStateProperty.all(Colors.transparent),
+                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
                         vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
@@ -148,8 +148,8 @@ class GuestHomePageState extends State<GuestHomePage>
                 const Divider(),
                 FilledButton.tonalIcon(
                   style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.all(Colors.transparent),
-                    padding: MaterialStateProperty.all(const EdgeInsets.symmetric(
+                    backgroundColor: WidgetStateProperty.all(Colors.transparent),
+                    padding: WidgetStateProperty.all(const EdgeInsets.symmetric(
                         vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),

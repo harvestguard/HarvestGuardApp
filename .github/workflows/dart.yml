@@ -60,9 +60,18 @@ jobs:
       - run: flutter pub get
       - run: flutter build apk --release
 
+      - name: Create Changelog
+        id: changelog
+        run: |
+          echo "Creating changelog..."
+          echo "## Changelog" > CHANGELOG.md
+          git log $(git describe --tags --abbrev=0 @^)..HEAD --pretty=format:"%h %s" >> CHANGELOG.md
+          echo "Changelog created."      
+
       - name: Push to Releases
         uses: ncipollo/release-action@v1
         with:
           artifacts: "build/app/outputs/apk/release/*"
           tag: ${{ env.NEW_TAG }}
+          bodyFile: CHANGELOG.md
           token: ${{ secrets.TOKEN }}

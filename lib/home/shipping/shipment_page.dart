@@ -359,7 +359,6 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) return const SizedBox.shrink();
                           final userData = Map<String, dynamic>.from(snapshot.data!.value as Map);
-                          if (userData == null) return const SizedBox.shrink();
                           
                           return Card(
                             margin: const EdgeInsets.all(8.0),

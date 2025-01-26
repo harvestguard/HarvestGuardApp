@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:harvest_guard/home/auctions/auction_card.dart';
-import 'package:harvest_guard/home/chats/chat_page.dart';
 import 'package:harvest_guard/home/shipping/shipping_card.dart';
 import 'package:harvest_guard/services/tools.dart';
 
