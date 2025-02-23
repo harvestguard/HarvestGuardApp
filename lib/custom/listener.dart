@@ -17,44 +17,186 @@ enum NotificationChannel {
   reminder,
 }
 
+class NotificationDatabase extends ChangeNotifier {
+  List<Map<String, dynamic>> notifications = [];
+  StreamSubscription? _notificationSubscription;
+  final FlutterLocalNotificationsPlugin localNotif =
+      FlutterLocalNotificationsPlugin();
+
+  NotificationDatabase() {
+    _initLocalNotifications();
+    _initializeNotificationsSubscription();
+  }
+
+  Future<void> _initLocalNotifications() async {
+    await localNotif.initialize(
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        iOS: DarwinInitializationSettings(),
+      ),
+    );
+  }
+
+  void _initializeNotificationsSubscription() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    _notificationSubscription = FirebaseFirestore.instance
+        .collection('notifications')
+        .snapshots()
+        .listen((snapshot) {
+      // Filter notifications similar to Next.js logic.
+      final filtered = snapshot.docs.where((doc) {
+        final data = doc.data() ;
+        if (data['type'] == 'newMessagePrivate' ||
+            data['type'] == 'updateMessagePrivate' ||
+            data['type'] == 'deleteMessagePrivate') {
+          // Ignore notifications originated by current user.
+          final from = data['from'];
+          if (from is Map && from['uid'] == currentUser.uid) return false;
+          final fromUid = from is Map ? from['uid'] : from;
+          final to = data['to'];
+          final toUid = to is Map ? to['uid'] : to;
+          return fromUid == currentUser.uid || toUid == currentUser.uid;
+        }
+        return true;
+      }).toList();
+
+      notifications =
+          filtered.map((doc) => doc.data()).toList();
+      notifyListeners();
+
+      if (notifications.isNotEmpty) {
+        // Sort notifications by timestamp descending.
+        notifications.sort((a, b) =>
+            (b['timestamp'] as int).compareTo(a['timestamp'] as int));
+        final latest = notifications.first;
+        // Only show a local notification if the sender is not the current user.
+        if (latest['sender'] != currentUser.uid) {
+          _showLocalNotification(latest);
+        }
+      }
+    });
+  }
+
+  Future<void> _showLocalNotification(Map<String, dynamic> notif) async {
+    // Map notification type to title and concise message.
+    String title = notif['type'] ?? 'Notification';
+    String concise = notif['message'] ?? '';
+
+    switch (notif['type']) {
+      case 'newBid':
+        title = 'New Bid';
+        concise = 'A new bid has been received.';
+        break;
+      case 'newAuction':
+        title = 'New Auction';
+        concise = notif['auctionDetails'] != null &&
+                notif['auctionDetails']['adminName'] != null
+            ? 'New auction created by ${notif['auctionDetails']['adminName']['firstName']} ${notif['auctionDetails']['adminName']['lastName']}.'
+            : 'A new auction has been created.';
+        break;
+      case 'auctionUpdate':
+        title = 'Auction Update';
+        concise = 'Auction updated for product ${notif['auctionDetails']?['product'] ?? "N/A"}.';
+        break;
+      case 'newMessagePrivate':
+        {
+          final sender = (notif['from'] is Map)
+              ? '${notif['from']['name']['firstName']} ${notif['from']['name']['lastName']}'
+              : notif['from'];
+          title = 'New Message from $sender';
+          concise = notif['message'] ?? 'You have received a new message.';
+        }
+        break;
+      case 'updateMessagePrivate':
+        title = 'Message Update';
+        concise = 'A message was updated.';
+        break;
+      case 'newReactPrivate':
+        title = 'New Reaction';
+        concise = 'There is a new reaction on a message.';
+        break;
+      case 'deleteMessagePrivate':
+        title = 'Message Deleted';
+        concise = 'A message was deleted.';
+        break;
+      case "newProduct":
+        final sellerName = notif['productDetails']['sellerName'] ? '${notif['productDetails']['sellerName']['firstName']} ${notif['productDetails']['sellerName']['lastName']}' : '';
+        concise = 'New product added by $sellerName.';
+        title = 'New Product';
+        break;
+        case "updateProduct":
+          concise = 'Product updated: ${notif['productDetails']['product'] ?? "N/A"}.';
+          title = 'Product Update';
+          break;
+        case "newShipment":          
+          final sellerName = notif['shipmentDetails']['sellerName'] ? '${notif['shipmentDetails']['sellerName']['firstName']} ${notif['shipmentDetails']['sellerName']['lastName']}' : "";
+          concise = 'New shipment created by $sellerName for ${notif['shipmentDetails']['product'] ?? "N/A"}.';
+          title = 'New Shipment';
+          break;
+        case "updateShipment":
+          concise = "Shipment updated.";
+          title = "Shipment Update";
+          break;
+        case "shipmentStatus":
+          concise = 'Shipment status changed to ${notif['shipmentDetails']['status'] ?? "N/A"}.';
+          title = "Shipment Status";
+          break;
+        case "shipmentLocation":
+          concise = "Shipment location updated.";
+          title = "Shipment Location";
+          break;
+        case "newUser":
+          final fullName = '${notif['userDetails']['firstName'] ?? ""} ${notif['userDetails']['middleName'] ?? ""} ${notif['userDetails']['lastName'] ?? ""}'.trim();
+          final userType = notif['userDetails']['isSeller'] ? "Seller" : notif['userDetails']['isDeliveryAgent'] ? "Delivery Agent" : "User";
+          concise = 'Registered as $userType: $fullName.';
+          title = "New User";
+          break;
+        case "updateUser":
+          concise = "User information updated.";
+          title = "User Update";
+          break;
+        default:
+          concise = notif['message'];
+    }
+
+    await localNotif.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000, // Unique ID
+      title,
+      concise,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'notifications_channel',
+          'Notifications',
+          channelDescription: 'General notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+          enableLights: true,
+          enableVibration: true,
+          playSound: true,
+          showWhen: false,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
+  }
+}
+
 class ChatDatabase extends ChangeNotifier {
   Map<String, StreamSubscription> chatEvents = {};
   Map<String, dynamic> chatsMap = {};
   final bool _disposed = false;
   StreamSubscription? _mainSubscription;
 
-  bool firstRun = true;
-  final FlutterLocalNotificationsPlugin localChatNotif =
-      FlutterLocalNotificationsPlugin();
-
   ChatDatabase() {
-    _initializeChatNotifications();
     _initializeMainSubscription();
-  }
-
-  void _initializeChatNotifications() async {
-    await localChatNotif.initialize(
-      const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      ),
-      onDidReceiveNotificationResponse: (response) async {
-        if (response.actionId == 'reply') {
-          Chat(chat: chatsMap, chatUid: response.payload)
-              .sendMessage(message: response.input ?? '');
-        } else {
-          navigatorKeyMain.currentState!.popAndPushNamed(
-            '/chat',
-            arguments: {
-              'chat': Chat(chat: chatsMap, chatUid: response.payload),
-              'from': navigatorKeyMain.currentState!.context
-                  .findAncestorWidgetOfExactType<ChatsPage>()!,
-            },
-          );
-        }
-
-        await localChatNotif.cancel(response.id!);
-      },
-    );
   }
 
   void _initializeMainSubscription() {
@@ -64,22 +206,16 @@ class ChatDatabase extends ChangeNotifier {
             isEqualTo: true)
         .snapshots()
         .listen((event) {
-
-      print( event.docs);
-
-
+      print(event.docs);
       if (_disposed) return; // Skip if disposed
-
       for (var element in event.docChanges) {
         if (element.type == DocumentChangeType.added ||
-            element.type == DocumentChangeType.modified &&
-                !chatEvents.containsKey(element.doc.id)) {
+            (element.type == DocumentChangeType.modified &&
+                !chatEvents.containsKey(element.doc.id))) {
           if (chatsMap[element.doc.id] == null) {
             chatsMap[element.doc.id] = element.doc.data();
-
             for (var member in element.doc.data()!['info']['members'].keys) {
               if (_disposed) return; // Skip if disposed during async operation
-
               FirebaseDatabase.instance
                   .ref()
                   .child('users')
@@ -89,7 +225,6 @@ class ChatDatabase extends ChangeNotifier {
                 if (_disposed) {
                   return; // Skip if disposed during async operation
                 }
-
                 Map<dynamic, dynamic> user =
                     value.snapshot.value! as Map<dynamic, dynamic>;
                 chatsMap[element.doc.id]['members'][member] = user;
@@ -105,6 +240,7 @@ class ChatDatabase extends ChangeNotifier {
             chatsMap[element.doc.id].addAll(element.doc.data());
           }
 
+          // Removed chat message local notification logic.
           var chatMessages = FirebaseFirestore.instance
               .collection('chats')
               .doc(element.doc.id)
@@ -112,46 +248,14 @@ class ChatDatabase extends ChangeNotifier {
               .snapshots()
               .listen((event) async {
             if (_disposed) return; // Skip if disposed
-
             event.metadata.isFromCache
                 ? print('From cache')
                 : print('From server');
-
             print(chatsMap[element.doc.id]['messages'].keys);
 
             for (var message in event.docChanges) {
               if (_disposed) break; // Break loop if disposed
-
-              if (message.type == DocumentChangeType.added &&
-                  !event.metadata.isFromCache &&
-                  message.doc.data()!['sender'] !=
-                      FirebaseAuth.instance.currentUser!.uid &&
-                  chatsMap[element.doc.id].containsKey('messages') &&
-                  !chatsMap[element.doc.id]['messages']
-                      .containsKey(message.doc.data()!['timestamp'])) {
-                FirebaseDatabase.instance
-                    .ref()
-                    .child('users')
-                    .child(message.doc.data()!['sender'])
-                    .once()
-                    .then((value) {
-                  if (_disposed) return; // Skip if disposed
-
-                  Map<dynamic, dynamic> user =
-                      value.snapshot.value! as Map<dynamic, dynamic>;
-
-                  _showChatNotification(
-                    element.doc.id,
-                    '${user['firstName']} ${user['middleName']} ${user['lastName']}',
-                    message.doc.data()!['message'],
-                    message.doc.id,
-                    user['thumbProfileImage'],
-                    'Messages',
-                    'New messages from your chats',
-                  );
-                });
-              }
-
+              
               if (message.type == DocumentChangeType.added ||
                   message.type == DocumentChangeType.modified) {
                 chatsMap[element.doc.id]!['messages'][message.doc.id] =
@@ -160,12 +264,9 @@ class ChatDatabase extends ChangeNotifier {
                 chatsMap[element.doc.id]!['messages'].remove(message.doc.id);
               }
             }
-
             safeNotifyListeners();
           });
-
           chatEvents[element.doc.id] = chatMessages;
-
           if (chatsMap[element.doc.id].containsKey('messages') == false) {
             chatsMap[element.doc.id]!['messages'] = {};
             safeNotifyListeners();
@@ -195,73 +296,21 @@ class ChatDatabase extends ChangeNotifier {
 
   @override
   void dispose() {
-   
+    _mainSubscription?.cancel();
+    super.dispose();
   }
-
-  Future<void> _showChatNotification(
-      String chatId,
-      String title,
-      String body,
-      String messageId,
-      String icon,
-      String channelName,
-      String channelDescription) async {
-    // print('Chat ID: $chatId, Message ID: $messageId');
-
-    await localChatNotif.show(
-      ((int.tryParse(messageId) ?? 0) / 1000).round(),
-      title,
-      body,
-      NotificationDetails(
-          android: AndroidNotificationDetails(
-        chatId,
-        channelName,
-        channelDescription: channelDescription,
-        importance: Importance.max,
-        priority: Priority.high,
-        enableLights: true,
-        enableVibration: true,
-        playSound: true,
-        showWhen: false,
-        actions: <AndroidNotificationAction>[
-          const AndroidNotificationAction(
-            'reply',
-            'Reply',
-            showsUserInterface: true,
-            allowGeneratedReplies: true,
-            inputs: <AndroidNotificationActionInput>[
-              AndroidNotificationActionInput(
-                label: 'Reply here...',
-              ),
-            ],
-          ),
-        ],
-      )),
-      payload: chatId,
-    );
-  }
-  // Rest of the code remains the same...
-  // (_initializeChatNotifications and _showChatNotification methods)
 }
 
 class AuctionDatabase extends ChangeNotifier {
   Map<String, StreamSubscription> auctionEvents = {};
   Map<String, dynamic> auctionsMap = {};
-
   bool firstRun = true;
-  final FlutterLocalNotificationsPlugin localChatNotif =
-      FlutterLocalNotificationsPlugin();
 
   AuctionDatabase() {
-    _initializeAuctionNotifications();
-    FirebaseFirestore.instance
-        .collection('auctions')
-        .snapshots()
-        .listen((event) {
+    FirebaseFirestore.instance.collection('auctions').snapshots().listen((event) {
       for (var element in event.docChanges) {
         print(
             'list: ${element.type} ${auctionEvents.containsKey(element.doc.id)}');
-
         if (element.type == DocumentChangeType.added ||
             element.type == DocumentChangeType.modified) {
           if (!auctionEvents.containsKey(element.doc.id)) {
@@ -269,7 +318,6 @@ class AuctionDatabase extends ChangeNotifier {
           } else {
             auctionsMap[element.doc.id].addAll(element.doc.data());
           }
-
           FirebaseDatabase.instance
               .ref()
               .child('users')
@@ -280,10 +328,8 @@ class AuctionDatabase extends ChangeNotifier {
                 value.snapshot.value! as Map<dynamic, dynamic>;
             print('ff, list: $user');
             auctionsMap[element.doc.id]['adminInfo'] = user;
-
             notifyListeners();
           });
-
           FirebaseFirestore.instance
               .collection('products')
               .doc(auctionsMap[element.doc.id]['adminUid'])
@@ -293,16 +339,8 @@ class AuctionDatabase extends ChangeNotifier {
               .then((value) {
             Map<String, dynamic> product = value.data()!;
             auctionsMap[element.doc.id]['itemInfo'] = product;
-
-            if (element.type == DocumentChangeType.added &&
-                !event.metadata.isFromCache) {
-              _showNewAuctionNotification(
-                auctionsMap[element.doc.id]['itemInfo']['item'],
-                auctionsMap[element.doc.id]['itemInfo']['adminUid'],
-              );
-            }
+            // Removed new auction notification logic.
           });
-
           var auctionBidMessages = FirebaseFirestore.instance
               .collection('auctions')
               .doc(element.doc.id)
@@ -312,11 +350,7 @@ class AuctionDatabase extends ChangeNotifier {
             event.metadata.isFromCache
                 ? print('From cache')
                 : print('From server');
-
-            // print('1, list: ${element.doc.data()} ${event.docChanges.length}');
-
             for (var bid in event.docChanges) {
-              // print('2, list: ${bid.doc.data()}');
               if (bid.type == DocumentChangeType.added ||
                   bid.type == DocumentChangeType.modified) {
                 FirebaseDatabase.instance
@@ -328,26 +362,15 @@ class AuctionDatabase extends ChangeNotifier {
                   Map<dynamic, dynamic> user =
                       value.snapshot.value! as Map<dynamic, dynamic>;
                   auctionsMap[element.doc.id]['bidUid'][bid.doc.id]
-                      ['thumbProfileImage'] = user['thumbProfileImage'];
+                          ['thumbProfileImage'] =
+                      user['thumbProfileImage'];
                   auctionsMap[element.doc.id]['bidUid'][bid.doc.id]['name'] =
                       '${user['firstName']} ${user['middleName']} ${user['lastName']}';
-                  // add 250 ms delay to allow the user to be added to the map
-
                   Future.delayed(const Duration(milliseconds: 250), () {
                     notifyListeners();
                   });
-
-                  // print('2.5, list: ${auctionsMap}');
-
-                  if (!event.metadata.isFromCache &&
-                      bid.type == DocumentChangeType.added) {
-                    _showNewBidNotification(
-                      auctionsMap[element.doc.id]['itemInfo']['item'],
-                      '${user['firstName']} ${user['middleName']} ${user['lastName']}',
-                    );
-                  }
+                  // Removed new bid notification logic.
                 });
-
                 auctionsMap[element.doc.id]!['bidUid'][bid.doc.id] =
                     bid.doc.data() as Map<String, dynamic>;
               } else if (bid.type == DocumentChangeType.removed) {
@@ -356,9 +379,7 @@ class AuctionDatabase extends ChangeNotifier {
               }
             }
           });
-
           auctionEvents[element.doc.id] = auctionBidMessages;
-
           if (auctionsMap[element.doc.id].containsKey('bidUid') == false) {
             auctionsMap[element.doc.id]!['bidUid'] = {};
             notifyListeners();
@@ -377,81 +398,13 @@ class AuctionDatabase extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _initializeAuctionNotifications() async {
-    await localChatNotif.initialize(
-      const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-      ),
-      onDidReceiveNotificationResponse: (response) async {
-        navigatorKeyMain.currentState!.popAndPushNamed(
-          '/auction',
-          arguments: {
-            'auctionMap': auctionsMap,
-            'auctionUid': response.payload,
-            'from': navigatorKeyMain.currentState!.context
-                .findAncestorWidgetOfExactType<AuctionPage>()!,
-          },
-        );
-
-        await localChatNotif.cancel(response.id!);
-      },
-    );
-  }
-
-  Future<void> _showNewBidNotification(
-      String productName, String newUserBidName) async {
-    // generate unique id for notification
-    int uid = (DateTime.now().millisecondsSinceEpoch / 1000).round();
-
-    await localChatNotif.show(
-      // generate uid for notification
-      uid,
-      'New bidding for ${productName.toUpperCase()}',
-      'User $newUserBidName has placed a new bid on $productName. Hurry and check it out!',
-      NotificationDetails(
-          android: AndroidNotificationDetails(
-        uid.toString(),
-        'Auctions Bid',
-        channelDescription: 'New bids from your auctions',
-        importance: Importance.defaultImportance,
-        priority: Priority.defaultPriority,
-        enableLights: true,
-        enableVibration: true,
-        playSound: true,
-        showWhen: false,
-      )),
-      payload: uid.toString(),
-    );
-  }
-
-  Future<void> _showNewAuctionNotification(
-      String productName, String sellerName) async {
-    // generate unique id for notification
-    int uid = DateTime.now().millisecondsSinceEpoch;
-
-    await localChatNotif.show(
-      // generate uid for notification
-      uid,
-      'New auction for ${productName.toUpperCase()}',
-      'Seller $sellerName has created a new auction for $productName. Hurry and check it out!',
-      NotificationDetails(
-          android: AndroidNotificationDetails(
-        uid.toString(),
-        'Auctions',
-        channelDescription: 'New auctions available',
-        importance: Importance.defaultImportance,
-        priority: Priority.defaultPriority,
-        enableLights: true,
-        enableVibration: true,
-        playSound: true,
-        showWhen: false,
-      )),
-      payload: uid.toString(),
-    );
-  }
-
   @override
-  void dispose() {}
+  void dispose() {
+    for (var sub in auctionEvents.values) {
+      sub.cancel();
+    }
+    super.dispose();
+  }
 }
 
 class ShipmentDatabase extends ChangeNotifier {
@@ -461,27 +414,14 @@ class ShipmentDatabase extends ChangeNotifier {
   bool get isLoading => _isLoading;
   
   StreamSubscription<QuerySnapshot>? _shipmentsSubscription;
-  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
   
   ShipmentDatabase() {
-    _initNotifications();
     _setupShipmentsListener();
-  }
-
-  Future<void> _initNotifications() async {
-    const initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initializationSettingsIOS = DarwinInitializationSettings();
-    const initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
-    await _notifications.initialize(initializationSettings);
   }
 
   void _setupShipmentsListener() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     _shipmentsSubscription?.cancel();
     _shipmentsSubscription = FirebaseFirestore.instance
         .collection('shipments')
@@ -506,7 +446,6 @@ class ShipmentDatabase extends ChangeNotifier {
           break;
       }
     }
-    
     _isLoading = false;
     notifyListeners();
   }
@@ -514,26 +453,17 @@ class ShipmentDatabase extends ChangeNotifier {
   Future<void> _handleNewShipment(DocumentSnapshot doc) async {
     final shipData = doc.data() as Map<String, dynamic>;
     await _processShipmentDocument(doc.id, shipData);
-    _showNotification(
-      'New Shipment',
-      'A new shipment has been created for ${_shipments[doc.id]?['productInfo']?['item'] ?? 'Unknown Product'}',
-    );
   }
 
   Future<void> _handleModifiedShipment(DocumentSnapshot doc) async {
     final newData = doc.data() as Map<String, dynamic>;
     final oldData = _shipments[doc.id]?['shippingInfo'] as Map<String, dynamic>?;
-    
     if (oldData != null) {
       final oldStatus = _getLatestStatus(oldData['status'] as Map<String, dynamic>?);
       final newStatus = _getLatestStatus(newData['status'] as Map<String, dynamic>?);
-      
       if (oldStatus != newStatus) {
         await _processShipmentDocument(doc.id, newData);
-        _showNotification(
-          'Shipment Status Updated',
-          'Status changed to: $newStatus',
-        );
+        // Removed shipment status update notification.
       }
     }
   }
@@ -545,7 +475,6 @@ class ShipmentDatabase extends ChangeNotifier {
 
   String _getLatestStatus(Map<String, dynamic>? statusMap) {
     if (statusMap == null || statusMap.isEmpty) return 'Pending';
-    
     final latestEpoch = statusMap.keys
         .map((e) => int.tryParse(e) ?? 0)
         .reduce((a, b) => a > b ? a : b);
@@ -554,7 +483,6 @@ class ShipmentDatabase extends ChangeNotifier {
 
   Future<void> _processShipmentDocument(String docId, Map<String, dynamic> shipData) async {
     try {
-      // Fetch product, buyer, and auction data concurrently
       final futures = await Future.wait([
         FirebaseFirestore.instance
             .collection('products')
@@ -583,12 +511,10 @@ class ShipmentDatabase extends ChangeNotifier {
       final Map<String, dynamic> auctionData = 
           Map<String, dynamic>.from(auctionDoc.data() as Map<String, dynamic>? ?? {});
 
-
       auctionData['buyerName'] =
           '${buyerData['firstName']} ${buyerData['middleName']} ${buyerData['lastName']}';
       auctionData['buyerAddress'] = buyerData['address'];
       auctionData['buyerContact'] = buyerData['number'];
-
 
       _shipments[docId] = {
         'buyerInfo': buyerData,
@@ -603,35 +529,12 @@ class ShipmentDatabase extends ChangeNotifier {
     }
   }
 
-  Future<void> _showNotification(String title, String body) async {
-    const androidDetails = AndroidNotificationDetails(
-      'shipments_channel',
-      'Shipments',
-      channelDescription: 'Notifications for shipment updates',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-    
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-    
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      title,
-      body,
-      details,
-    );
-  }
-
   @override
   void dispose() {
+    _shipmentsSubscription?.cancel();
+    super.dispose();
   }
 }
+
+
+
