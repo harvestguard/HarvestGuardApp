@@ -353,7 +353,7 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildStatusSection(),
-                    if (_selectedRider != null)
+                    if (_selectedRider != null && _selectedRider!.isNotEmpty)
                       FutureBuilder<DataSnapshot>(
                         future: _database.ref('users/$_selectedRider').get(),
                         builder: (context, snapshot) {

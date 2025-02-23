@@ -276,7 +276,6 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                                                   'file.data.shipmentId': true
                                                                                 });
 
-                                                                              
                                                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                                                   const SnackBar(
                                                                                     content: Text('Confirmed shipment, added shipment to the library'),
@@ -413,21 +412,43 @@ class _ChatWidgetState extends State<ChatWidget> {
                                                           const Text("Cancel")),
                                                 ),
                                               ] else
+                                              // check if shipmentId's type is string
+                                              if (widget.file!['data']
+                                                      .containsKey(
+                                                          'shipmentId') &&
+                                                  widget.file!['data']
+                                                          ['shipmentId']
+                                                      is String) ...[
                                                 Expanded(
                                                   child: FilledButton(
                                                       onPressed: (() {
-                
-                                                         Navigator.of(context).pushNamed(
+                                                        Navigator.of(context)
+                                                            .pushNamed(
                                                           '/delivery-tracking',
                                                           arguments: {
-                                                            'shipmentId': widget.file!['data']['shipmentId'],
-                                                            'shippingData': widget.file!['data'],
+                                                            'shipmentId': widget
+                                                                        .file![
+                                                                    'data']
+                                                                ['shipmentId'],
+                                                            'shippingData':
+                                                                widget.file![
+                                                                    'data'],
                                                             'from': context,
                                                           },
                                                         );
                                                       }),
-                                                      child:
-                                                          const Text("Track Shipment")),
+                                                      child: const Text(
+                                                          "Track Shipment")),
+                                                ),
+                                              ] else
+                                                // add text shows that shipment is not confirmed
+                                                Text(
+                                                  'Waiting for shipment confirmation',
+                                                  style: TextStyle(
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurface
+                                                          .withOpacity(0.75)),
                                                 ),
                                             ]),
                                       );

@@ -154,7 +154,7 @@ class AuctionCard extends StatelessWidget {
                                           ),
                                         ),
                                         Text(
-                                          '(${_formatCurrency(product!['price'].toDouble())} per item)',
+                                          '(${_formatCurrency(product!['price'].toDouble())} per ${product!["unit"]})',
                                           style: theme.textTheme.labelSmall
                                               ?.copyWith(
                                             color: theme

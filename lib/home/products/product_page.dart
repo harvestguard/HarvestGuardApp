@@ -121,7 +121,8 @@ class _ProductPageState extends State<ProductPage>
                                     style: TextStyle(fontSize: 14.0))),
                             const SizedBox(height: 5.0),
                             Text(
-                              '₱${(product['price'] * 1.00).toStringAsFixed(2)} per item',
+                          '₱${(product['price'] * 1.00).toStringAsFixed(2)} per ${product["unit"]}',
+
                               style: const TextStyle(
                                 fontSize: 16.0,
                               ),
