@@ -33,6 +33,9 @@ class _ClearButton extends StatelessWidget {
       );
 }
 
+// Issue on firebase about SMS verification
+// https://stackoverflow.com/questions/79385315/securityexception-unknown-calling-package-name-com-google-android-gms-in-flut
+
 class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _middleNameController = TextEditingController();
@@ -95,20 +98,36 @@ class _RegisterPageState extends State<RegisterPage> {
   void _updateFullAddress() {
     setState(() {
       _addressController.text = [
+        _unitAddressController.text,
         _selectedBarangay != null
-            ? ((_barangayItems.firstWhere((item) => item.value == _selectedBarangay).child) as Text).data ?? ''
+            ? ((_barangayItems
+                        .firstWhere((item) => item.value == _selectedBarangay)
+                        .child) as Text)
+                    .data ??
+                ''
             : '',
         _selectedCity != null
-            ? ((_cityItems.firstWhere((item) => item.value == _selectedCity).child) as Text).data ?? ''
+            ? ((_cityItems
+                        .firstWhere((item) => item.value == _selectedCity)
+                        .child) as Text)
+                    .data ??
+                ''
             : '',
         _selectedProvince != null
-            ? ((_provinceItems.firstWhere((item) => item.value == _selectedProvince).child) as Text).data ?? ''
+            ? ((_provinceItems
+                        .firstWhere((item) => item.value == _selectedProvince)
+                        .child) as Text)
+                    .data ??
+                ''
             : '',
         _selectedRegion != null
-            ? ((_regionItems.firstWhere((item) => item.value == _selectedRegion).child) as Text).data ?? ''
+            ? ((_regionItems
+                        .firstWhere((item) => item.value == _selectedRegion)
+                        .child) as Text)
+                    .data ??
+                ''
             : '',
         'Philippines',
-        _unitAddressController.text,
       ].where((part) => part.isNotEmpty).join(', ');
     });
   }
@@ -145,6 +164,34 @@ class _RegisterPageState extends State<RegisterPage> {
     };
   }
 
+  String? _selectedSuffix;
+  final List<DropdownMenuItem<String>> _suffixItems = [
+    const DropdownMenuItem(
+      value: 'jr',
+      child: Text('Jr.'),
+    ),
+    const DropdownMenuItem(
+      value: 'sr',
+      child: Text('Sr.'),
+    ),
+    const DropdownMenuItem(
+      value: 'ii',
+      child: Text('II'),
+    ),
+    const DropdownMenuItem(
+      value: 'iii',
+      child: Text('III'),
+    ),
+    const DropdownMenuItem(
+      value: 'iv',
+      child: Text('IV'),
+    ),
+    const DropdownMenuItem(
+      value: 'v',
+      child: Text('V'),
+    ),
+  ];
+
   Future _registerUser(BuildContext context) async {
     // Implement your registration logic here
     String firstName = _firstNameController.text;
@@ -161,7 +208,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
     // Check if the fields are empty
     if (firstName.isEmpty ||
-        middleName.isEmpty ||
         lastName.isEmpty ||
         number.isEmpty ||
         email.isEmpty ||
@@ -258,58 +304,6 @@ class _RegisterPageState extends State<RegisterPage> {
       password: password,
     )
         .then((value) async {
-      // Registration successful
-      await FirebaseDatabase.instance
-          .ref()
-          .child('users')
-          .child(value.user!.uid)
-          .set({
-        'firstName': firstName,
-        'middleName': middleName,
-        'lastName': lastName,
-        'gender': _selectedGender,
-        'birthday': _birthdayController.text,
-        'number': number,
-        'email': email,
-        'country': _selectedCountry,
-        'region': _selectedRegion,
-        'province': _selectedProvince,
-        'city': _selectedCity,
-        'barangay': _selectedBarangay,
-        'unitAddress': unitAddress,
-        'address': address,
-        'zipCode': zipCode,
-        'username': username,
-        'profileImage': '',
-        'thumbProfileImage': '',
-      });
-
-      Reference ref =
-          FirebaseStorage.instance.ref().child('images').child(value.user!.uid);
-
-      Map<String, Uint8List> bytes = await _resizeImage(_image!);
-
-      // Upload the resized image
-      UploadTask uploadTask =
-          ref.child('profile_image').putData(bytes['normal']!);
-      TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => null);
-      String imageUrl = await taskSnapshot.ref.getDownloadURL();
-
-      // Upload the resized thumbnail image
-      uploadTask =
-          ref.child('thumb_profile_image').putData(bytes['thumbnail']!);
-      taskSnapshot = await uploadTask.whenComplete(() => null);
-      String thumbImageUrl = await taskSnapshot.ref.getDownloadURL();
-
-      await FirebaseDatabase.instance
-          .ref()
-          .child('users')
-          .child(value.user!.uid)
-          .update({
-        'profileImage': imageUrl,
-        'thumbProfileImage': thumbImageUrl,
-      });
-
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: number,
         verificationCompleted: (PhoneAuthCredential credential) async {
@@ -384,10 +378,70 @@ class _RegisterPageState extends State<RegisterPage> {
                     try {
                       final AuthCredential credential =
                           PhoneAuthProvider.credential(
-                              verificationId: _verificationId, smsCode: _otpcode);
+                              verificationId: _verificationId,
+                              smsCode: _otpcode);
                       await FirebaseAuth.instance.currentUser!
                           .linkWithCredential(credential);
-                          
+
+                      // Registration successful
+                      await FirebaseDatabase.instance
+                          .ref()
+                          .child('users')
+                          .child(value.user!.uid)
+                          .set({
+                        'firstName': firstName,
+                        'middleName': middleName,
+                        'lastName': lastName,
+                        'suffix': _selectedSuffix ?? '',
+                        'gender': _selectedGender,
+                        'birthday': _birthdayController.text,
+                        'number': number,
+                        'email': email,
+                        'country': _selectedCountry,
+                        'region': _selectedRegion,
+                        'province': _selectedProvince,
+                        'city': _selectedCity,
+                        'barangay': _selectedBarangay,
+                        'unitAddress': unitAddress,
+                        'address': address,
+                        'zipCode': zipCode,
+                        'username': username,
+                        'profileImage': '',
+                        'thumbProfileImage': '',
+                      });
+
+                      Reference ref = FirebaseStorage.instance
+                          .ref()
+                          .child('images')
+                          .child(value.user!.uid);
+
+                      Map<String, Uint8List> bytes =
+                          await _resizeImage(_image!);
+
+                      // Upload the resized image
+                      UploadTask uploadTask =
+                          ref.child('profile_image').putData(bytes['normal']!);
+                      TaskSnapshot taskSnapshot =
+                          await uploadTask.whenComplete(() => null);
+                      String imageUrl = await taskSnapshot.ref.getDownloadURL();
+
+                      // Upload the resized thumbnail image
+                      uploadTask = ref
+                          .child('thumb_profile_image')
+                          .putData(bytes['thumbnail']!);
+                      taskSnapshot = await uploadTask.whenComplete(() => null);
+                      String thumbImageUrl =
+                          await taskSnapshot.ref.getDownloadURL();
+
+                      await FirebaseDatabase.instance
+                          .ref()
+                          .child('users')
+                          .child(value.user!.uid)
+                          .update({
+                        'profileImage': imageUrl,
+                        'thumbProfileImage': thumbImageUrl,
+                      });
+
                       if (!context.mounted) return;
                       Navigator.of(context).pop();
                       Navigator.of(context).pushNamedAndRemoveUntil(
@@ -397,6 +451,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       );
 
                       if (!context.mounted) return;
+                      Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Account created successfully'),
@@ -404,6 +459,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       );
                     } catch (error) {
                       if (!context.mounted) return;
+                      Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Error occurred: ${error.toString()}'),
@@ -419,6 +475,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
     }).catchError((error) {
       // Registration failed
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${error.toString()}'),
@@ -626,7 +683,28 @@ class _RegisterPageState extends State<RegisterPage> {
                     suffixIcon: _ClearButton(controller: _firstNameController),
                     labelText: 'First name',
                     hintText: 'Enter your first name',
-                    fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceTint
+                        .withOpacity(0.1),
+                    filled: true,
+                  ),
+                ),
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.only(left: 18.0, right: 18.0, top: 16.0),
+                child: TextField(
+                  controller: _lastNameController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    suffixIcon: _ClearButton(controller: _lastNameController),
+                    labelText: 'Last name',
+                    hintText: 'Enter your last name',
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceTint
+                        .withOpacity(0.1),
                     filled: true,
                   ),
                 ),
@@ -639,14 +717,17 @@ class _RegisterPageState extends State<RegisterPage> {
                       padding: const EdgeInsets.only(
                           left: 18.0, right: 9.0, top: 16.0),
                       child: TextField(
-                        controller: _lastNameController,
+                        controller: _middleNameController,
                         textCapitalization: TextCapitalization.words,
                         decoration: InputDecoration(
                           suffixIcon:
-                              _ClearButton(controller: _lastNameController),
-                          labelText: 'Last name',
-                          hintText: 'Enter your last name',
-                          fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                              _ClearButton(controller: _middleNameController),
+                          labelText: 'Middle name (optional)',
+                          hintText: 'Enter your Middle name',
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceTint
+                              .withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -656,17 +737,23 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: Padding(
                       padding: const EdgeInsets.only(
                           left: 9.0, right: 18.0, top: 16.0),
-                      child: TextField(
-                        controller: _middleNameController,
-                        textCapitalization: TextCapitalization.words,
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedSuffix,
+                        isExpanded: true,
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedSuffix = value;
+                          });
+                        },
                         decoration: InputDecoration(
-                          suffixIcon:
-                              _ClearButton(controller: _middleNameController),
-                          labelText: 'Middle name',
-                          hintText: 'Enter your Middle name',
-                          fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                          labelText: 'Suffix (Optional)',
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceTint
+                              .withOpacity(0.1),
                           filled: true,
                         ),
+                        items: _suffixItems,
                       ),
                     ),
                   ),
@@ -701,7 +788,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     decoration: InputDecoration(
                       prefixIcon: const Icon(FluentIcons.person_24_filled),
                       labelText: 'Gender',
-                      fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                      fillColor: Theme.of(context)
+                          .colorScheme
+                          .surfaceTint
+                          .withOpacity(0.1),
                       filled: true,
                     ),
                     items: const [
@@ -729,7 +819,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     suffixIcon: _ClearButton(controller: _birthdayController),
                     labelText: 'Birthday',
                     hintText: 'Select your birthday',
-                    fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceTint
+                        .withOpacity(0.1),
                     filled: true,
                   ),
                   onTap: () {
@@ -787,7 +880,10 @@ class _RegisterPageState extends State<RegisterPage> {
                         },
                         decoration: InputDecoration(
                           labelText: 'Country',
-                          fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceTint
+                              .withOpacity(0.1),
                           filled: true,
                         ),
                         items: const [
@@ -820,7 +916,10 @@ class _RegisterPageState extends State<RegisterPage> {
                         },
                         decoration: InputDecoration(
                           labelText: 'Region',
-                          fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceTint
+                              .withOpacity(0.1),
                           filled: true,
                         ),
                         items: _regionItems,
@@ -852,8 +951,11 @@ class _RegisterPageState extends State<RegisterPage> {
                         },
                         decoration: InputDecoration(
                           labelText: 'Province',
-                          filled: true,                    
-                          fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                          filled: true,
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceTint
+                              .withOpacity(0.1),
                         ),
                         items: _provinceItems,
                       ),
@@ -876,7 +978,10 @@ class _RegisterPageState extends State<RegisterPage> {
                         },
                         decoration: InputDecoration(
                           labelText: 'City/Municipality',
-                          fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceTint
+                              .withOpacity(0.1),
                           filled: true,
                         ),
                         items: _cityItems,
@@ -903,7 +1008,10 @@ class _RegisterPageState extends State<RegisterPage> {
                         },
                         decoration: InputDecoration(
                           labelText: 'Barangay',
-                          fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceTint
+                              .withOpacity(0.1),
                           filled: true,
                         ),
                         items: _barangayItems,
@@ -921,7 +1029,10 @@ class _RegisterPageState extends State<RegisterPage> {
                               _ClearButton(controller: _unitAddressController),
                           labelText: 'Unit/Street/Building',
                           hintText: 'Enter your full address',
-                          fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceTint
+                              .withOpacity(0.1),
                           filled: true,
                         ),
                       ),
@@ -940,7 +1051,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     labelText: 'Full address',
                     hintText: 'Enter your full address',
                     helperText: 'Address must not contain special characters',
-                    fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceTint
+                        .withOpacity(0.1),
                     filled: true,
                   ),
                 ),
@@ -956,7 +1070,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     labelText: 'Zip code',
                     hintText: 'Enter your zip code',
                     helperText: 'Zip code must be a 4 digit number',
-                    fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceTint
+                        .withOpacity(0.1),
                     filled: true,
                   ),
                 ),
@@ -980,7 +1097,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     labelText: 'Number',
                     hintText: 'Enter your number',
                     helperText: 'Number must be a valid number',
-                    fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceTint
+                        .withOpacity(0.1),
                     filled: true,
                   ),
                 ),
@@ -996,7 +1116,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     labelText: 'Email',
                     hintText: 'Enter your email',
                     helperText: 'Email must be a valid email address',
-                    fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceTint
+                        .withOpacity(0.1),
                     filled: true,
                   ),
                 ),
@@ -1019,7 +1142,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     labelText: 'Username',
                     hintText: 'Enter your username',
                     helperText: 'Username must not contain special characters',
-                    fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceTint
+                        .withOpacity(0.1),
                     filled: true,
                   ),
                 ),
@@ -1048,7 +1174,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     hintText: 'Enter your password',
                     helperText: 'Password must be at least 8 characters long',
                     filled: true,
-                    fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceTint
+                        .withOpacity(0.1),
                   ),
                 ),
               ),
@@ -1074,7 +1203,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     labelText: 'Confirm Password',
                     hintText: 'Enter your confirm password',
                     helperText: 'Confirm password must be the same as password',
-                    fillColor: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.1),
+                    fillColor: Theme.of(context)
+                        .colorScheme
+                        .surfaceTint
+                        .withOpacity(0.1),
                     filled: true,
                   ),
                 ),

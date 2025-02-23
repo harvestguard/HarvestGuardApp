@@ -33,14 +33,18 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import 'package:firebase_app_check/firebase_app_check.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.playIntegrity
+  );
   // await FirebaseAuth.instance.useAuthEmulator('192.168.18.102', 5555);
 
-  notificationDatabase;
 
   // allow notifications permissions
   await Permission.notification.request();

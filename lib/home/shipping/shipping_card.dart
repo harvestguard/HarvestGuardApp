@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:harvest_guard/custom/carousel.dart';
 
@@ -79,39 +78,18 @@ class _ShipmentCardState extends State<ShipmentCard> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      widget.itemInfo['item'].toString().toUpperCase(),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
+                                Text(
+                                  widget.itemInfo['item']
+                                      .toString()
+                                      .toUpperCase(),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .secondaryContainer,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        '${widget.itemInfo['quantity']} pcs',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall,
-                                      ),
-                                    ),
-                                  ],
                                 ),
+
                                 const Spacer(), // Now correctly placed between content
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -129,15 +107,40 @@ class _ShipmentCardState extends State<ShipmentCard> {
                                                 ?.withOpacity(0.6),
                                           ),
                                     ),
-                                    Text(
-                                      '₱${widget.bid.toStringAsFixed(2)}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.green.shade700,
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '₱${widget.bid.toStringAsFixed(2)}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green.shade700,
+                                              ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
                                           ),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .secondaryContainer,
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            '${widget.itemInfo['quantity']} ${widget.itemInfo['unit']}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelSmall,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -177,12 +180,13 @@ class _ShipmentCardState extends State<ShipmentCard> {
                                         ?.withOpacity(0.6),
                                   ),
                         ),
-                         Text(
-                          widget.auctionInfo['buyerName'],
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,)
-                        ),
+                        Text(widget.auctionInfo['buyerName'],
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                )),
                         Text(
                           widget.auctionInfo['buyerAddress'],
                           style:
@@ -195,27 +199,33 @@ class _ShipmentCardState extends State<ShipmentCard> {
                                         ?.withOpacity(0.8),
                                   ),
                         ),
-                        ... widget.showContact ? [
-                          const SizedBox(height: 16),
-                          Text(
-                            'Contact Number',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.color
-                                          ?.withOpacity(0.6),
-                                    ),
-                          ),
-                          Text(
-                            widget.auctionInfo['buyerContact'],
-                            style:
-                                Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                          ),
-                        ] : []
+                        ...widget.showContact
+                            ? [
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Contact Number',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.color
+                                            ?.withOpacity(0.6),
+                                      ),
+                                ),
+                                Text(
+                                  widget.auctionInfo['buyerContact'],
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ]
+                            : []
                       ],
                     ),
                   ),
@@ -244,5 +254,4 @@ class _ShipmentCardState extends State<ShipmentCard> {
       ),
     );
   }
-
 }

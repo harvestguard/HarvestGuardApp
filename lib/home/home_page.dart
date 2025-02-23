@@ -27,41 +27,6 @@ class HomePageState extends State<HomePage>
   @override
   bool get wantKeepAlive => true;
 
-  final List<NavigationDestination> _destinations = [
-    const NavigationDestination(
-      selectedIcon: Icon(FluentIcons.home_16_filled),
-      icon: Icon(FluentIcons.home_16_regular),
-      label: 'Home',
-    ),
-    const NavigationDestination(
-      selectedIcon: Badge(
-        label: Text("10"),
-        child: Icon(FluentIcons.chat_16_filled),
-      ),
-      icon: Badge(
-        label: Text("10"),
-        child: Icon(FluentIcons.chat_16_regular),
-      ),
-      label: 'Chats',
-    ),
-    const NavigationDestination(
-      selectedIcon: Badge(
-        label: Text("10"),
-        child: Icon(FluentIcons.shopping_bag_16_filled),
-      ),
-      icon: Badge(
-        label: Text("10"),
-        child: Icon(FluentIcons.shopping_bag_16_regular),
-      ),
-      label: 'Auctions',
-    ),
-    const NavigationDestination(
-      selectedIcon: Icon(FluentIcons.vehicle_truck_profile_16_filled),
-      icon: Icon(FluentIcons.vehicle_truck_profile_16_regular),
-      label: 'Shipments',
-    ),
-  ];
-
   final List<NavigationRailDestination> _destinationLarge = const [
     NavigationRailDestination(
       selectedIcon: Icon(FluentIcons.home_16_filled),
@@ -133,6 +98,8 @@ class HomePageState extends State<HomePage>
   late String _profileImage = '';
   @override
   void initState() {
+    notificationDatabase;
+
     FirebaseDatabase.instance
         .ref()
         .child('users')
@@ -177,6 +144,11 @@ class HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+
+    final chats = context.watch<ChatDatabase>();
+    final auctions = context.watch<AuctionDatabase>();
+    final shipments = context.watch<ShipmentDatabase>();
+    final notification = context.watch<NotificationDatabase>();
 
     NavigationRailLabelType labelType = NavigationRailLabelType.all;
 
@@ -241,7 +213,10 @@ class HomePageState extends State<HomePage>
                         vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
-                  icon: const Icon(FluentIcons.chat_24_filled),
+                  icon: Badge(
+                    label: Text(chats.chatsMap.length.toString()),
+                    child: const Icon(FluentIcons.chat_24_filled),
+                  ),
                   label: const Padding(
                       padding: EdgeInsets.only(left: 5.0),
                       child: Text('Chats')),
@@ -258,7 +233,10 @@ class HomePageState extends State<HomePage>
                         vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
-                  icon: const Icon(FluentIcons.shopping_bag_24_filled),
+                  icon: Badge(
+                    label: Text(auctions.auctionsMap.length.toString()),
+                    child: const Icon(FluentIcons.shopping_bag_24_filled),
+                  ),
                   label: const Padding(
                       padding: EdgeInsets.only(left: 5.0),
                       child: Text('Auctions')),
@@ -275,7 +253,11 @@ class HomePageState extends State<HomePage>
                         vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
-                  icon: const Icon(FluentIcons.vehicle_truck_profile_24_filled),
+                  icon: Badge(
+                    label: Text(shipments.shipments.length.toString()),
+                    child:
+                        const Icon(FluentIcons.vehicle_truck_profile_24_filled),
+                  ),
                   label: const Padding(
                       padding: EdgeInsets.only(left: 5.0),
                       child: Text('Shipments')),
@@ -295,7 +277,10 @@ class HomePageState extends State<HomePage>
                         vertical: 16.0, horizontal: 25.0)),
                     alignment: Alignment.centerLeft,
                   ),
-                  icon: const Icon(FluentIcons.alert_24_filled),
+                  icon: Badge(
+                    label: Text(notification.notifications.length.toString()),
+                    child: const Icon(FluentIcons.alert_24_filled),
+                  ),
                   label: const Padding(
                       padding: EdgeInsets.only(left: 5.0),
                       child: Text('Notifications')),
@@ -406,45 +391,83 @@ class HomePageState extends State<HomePage>
       ),
     );
 
-    return
-    RepaintBoundary(
-      child: 
-      isSmallScreen
-        ? Scaffold(
-            drawer: drawer,
-            key: scaffoldKey,
-            body: NewWidget(pageController: _pageController, pages: homePages),
-            bottomNavigationBar: NavigationBar(
-              surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
-              onDestinationSelected: (int index) {
-                _onItemTapped(index);
-              },
-              selectedIndex: _selectedIndex,
-              destinations: _destinations,
+    return RepaintBoundary(
+      child: isSmallScreen
+          ? Scaffold(
+              drawer: drawer,
+              key: scaffoldKey,
+              body:
+                  NewWidget(pageController: _pageController, pages: homePages),
+              bottomNavigationBar: NavigationBar(
+                surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
+                onDestinationSelected: (int index) {
+                  _onItemTapped(index);
+                },
+                selectedIndex: _selectedIndex,
+                destinations: [
+                  NavigationDestination(
+                    selectedIcon: Icon(FluentIcons.home_16_filled),
+                    icon: Icon(FluentIcons.home_16_regular),
+                    label: 'Home',
+                  ),
+                  NavigationDestination(
+                    selectedIcon: Badge(
+                      label: Text(chats.chatsMap.length.toString()),
+                      child: Icon(FluentIcons.chat_16_filled),
+                    ),
+                    icon: Badge(
+                      label: Text(chats.chatsMap.length.toString()),
+                      child: Icon(FluentIcons.chat_16_regular),
+                    ),
+                    label: 'Chats',
+                  ),
+                  NavigationDestination(
+                    selectedIcon: Badge(
+                      label: Text(auctions.auctionsMap.length.toString()),
+                      child: Icon(FluentIcons.shopping_bag_16_filled),
+                    ),
+                    icon: Badge(
+                      label: Text(auctions.auctionsMap.length.toString()),
+                      child: Icon(FluentIcons.shopping_bag_16_regular),
+                    ),
+                    label: 'Auctions',
+                  ),
+                  NavigationDestination(
+                    selectedIcon: Badge(
+                      label: Text(shipments.shipments.length.toString()),
+                      child: Icon(FluentIcons.vehicle_truck_profile_16_filled),
+                    ),
+                    icon: Badge(
+                      label: Text(shipments.shipments.length.toString()),
+                      child: Icon(FluentIcons.vehicle_truck_profile_16_regular),
+                    ),
+                    label: 'Shipments',
+                  ),
+                ],
+              ),
+            )
+          : Scaffold(
+              drawer: drawer,
+              key: scaffoldKey,
+              body: Row(
+                children: [
+                  NavigationRail(
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: (int index) {
+                      _onItemTapped(index);
+                    },
+                    labelType: labelType,
+                    destinations: _destinationLarge,
+                  ),
+                  const VerticalDivider(thickness: 1, width: 1),
+                  Expanded(
+                    child: NewWidget(
+                        pageController: _pageController, pages: homePages),
+                  )
+                ],
+              ),
             ),
-          )
-        : Scaffold(
-            drawer: drawer,
-            key: scaffoldKey,
-            body: Row(
-              children: [
-                NavigationRail(
-                  selectedIndex: _selectedIndex,
-                  onDestinationSelected: (int index) {
-                    _onItemTapped(index);
-                  },
-                  labelType: labelType,
-                  destinations: _destinationLarge,
-                ),
-                const VerticalDivider(thickness: 1, width: 1),
-                Expanded(
-                  child: NewWidget(
-                      pageController: _pageController, pages: homePages),
-                )
-              ],
-            ),
-            ),
-          );
+    );
   }
 }
 

@@ -113,7 +113,7 @@ class AuctionCard extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(12.0),
                                     ),
                                     child: Text(
-                                      '${product!['quantity']} pcs',
+                                      '${product!['quantity']} ${product!['unit']}',
                                       style:
                                           theme.textTheme.labelSmall?.copyWith(
                                         color: theme

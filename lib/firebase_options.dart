@@ -46,15 +46,17 @@ class DefaultFirebaseOptions {
     messagingSenderId: '733603630832',
     projectId: 'harvestdata-50209',
     authDomain: 'harvestdata-50209.firebaseapp.com',
+    databaseURL: 'https://harvestdata-50209-default-rtdb.firebaseio.com',
     storageBucket: 'harvestdata-50209.appspot.com',
     measurementId: 'G-6P5FKH0DHC',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCx2bPITkzqXaVgj1hfAlI_O8no_qxRTm8',
-    appId: '1:733603630832:android:bcf211e36e876ec5987c35',
+    appId: '1:733603630832:android:6830c66de9620f5b987c35',
     messagingSenderId: '733603630832',
     projectId: 'harvestdata-50209',
+    databaseURL: 'https://harvestdata-50209-default-rtdb.firebaseio.com',
     storageBucket: 'harvestdata-50209.appspot.com',
   );
 

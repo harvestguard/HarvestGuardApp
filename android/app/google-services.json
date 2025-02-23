@@ -1,0 +1,107 @@
+{
+  "project_info": {
+    "project_number": "733603630832",
+    "firebase_url": "https://harvestdata-50209-default-rtdb.firebaseio.com",
+    "project_id": "harvestdata-50209",
+    "storage_bucket": "harvestdata-50209.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:733603630832:android:bcf211e36e876ec5987c35",
+        "android_client_info": {
+          "package_name": "com.example.harvest_dart"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "733603630832-dcvb1h42applsgfddip8pfophtv6pf09.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.harvest_dart",
+            "certificate_hash": "acc514ed1dfc414e5f43757d95cafc68c455034f"
+          }
+        },
+        {
+          "client_id": "733603630832-6qg13enq1u1c32vhj06km4pfnsp5a5fo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCx2bPITkzqXaVgj1hfAlI_O8no_qxRTm8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "733603630832-6qg13enq1u1c32vhj06km4pfnsp5a5fo.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "733603630832-vlv92sl0867l5u2lcdmo6085fi8ogkf8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.harvestDart"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:733603630832:android:6830c66de9620f5b987c35",
+        "android_client_info": {
+          "package_name": "com.example.harvest_guard_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "733603630832-3rqefogo50ihuv1bhq2l4dnl8ebp4s1v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.harvest_guard_app",
+            "certificate_hash": "804360f35103e55a52c87de29164e35af7e684e8"
+          }
+        },
+        {
+          "client_id": "733603630832-8f2uedvt8ntq34b11o7chtsta6977jdc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.harvest_guard_app",
+            "certificate_hash": "bca1d0f868ae62daa57b3e68100d366f5d177d2a"
+          }
+        },
+        {
+          "client_id": "733603630832-6qg13enq1u1c32vhj06km4pfnsp5a5fo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCx2bPITkzqXaVgj1hfAlI_O8no_qxRTm8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "733603630832-6qg13enq1u1c32vhj06km4pfnsp5a5fo.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "733603630832-vlv92sl0867l5u2lcdmo6085fi8ogkf8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.harvestDart"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
