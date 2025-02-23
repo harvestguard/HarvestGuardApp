@@ -6,12 +6,11 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:install_plugin/install_plugin.dart';
+import 'package:open_file/open_file.dart';
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:app_settings/app_settings.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 class VersionChecker {
@@ -168,9 +167,16 @@ class VersionChecker {
         if (Platform.isAndroid) {
           final hasPermission = await _checkInstallPermission();
           if (hasPermission) {
-            InstallPlugin.installApk(filePath);
+            await OpenFile.open(filePath);
           } else {
-            await _showPermissionDialog(navigatorKeyMain.currentContext!);
+            final permissionStatus =
+                await Permission.requestInstallPackages.request();
+            if (permissionStatus.isGranted) {
+              await OpenFile.open(filePath);
+            } else {
+              print(
+                  'Permission denied to install the APK. Please allow installation from unknown sources in your device settings.');
+            }
           }
         }
       }
@@ -249,30 +255,5 @@ class VersionChecker {
       }
     }
     return true;
-  }
-
-  static Future<void> _showPermissionDialog(BuildContext context) async {
-    return showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Permission Required'),
-        content: const Text(
-            'Please enable installation from unknown sources to update the app.'),
-        actions: [
-          TextButton(
-            child: const Text('Open Settings'),
-            onPressed: () {
-              Navigator.pop(context);
-              AppSettings.openAppSettings(type: AppSettingsType.security);
-            },
-          ),
-          TextButton(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
   }
 }

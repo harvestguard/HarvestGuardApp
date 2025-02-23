@@ -5,18 +5,23 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+
+def sPassword = 'HarvestGuard@Password'
+def kAlias = 'HarvestGuard@KeyAlias'
+def kPassword = 'HarvestGuard@Password'
+
 android {
     namespace = "com.example.harvest_guard_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17
+        jvmTarget = JavaVersion.VERSION_1_8
     }
 
     defaultConfig {
@@ -29,14 +34,45 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
-
-    buildTypes {
+    signingConfigs {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            storeFile file("keystore/release.jks")
+            storePassword sPassword
+            keyAlias kAlias
+            keyPassword kPassword
         }
     }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.release
+        }
+        release {
+            shrinkResources true
+            minifyEnabled true
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+task generateKeystore() {
+    exec {
+        workingDir projectDir
+        commandLine 'mkdir', '-p', 'keystore'
+    }
+    exec {
+        workingDir projectDir
+        commandLine 'rm', '-f', 'keystore/release.jks'
+    }
+    exec {
+        workingDir projectDir
+        commandLine 'keytool', '-genkey', '-noprompt', '-keystore', 'keystore/release.jks',
+            '-alias', kAlias, '-storepass', sPassword, '-keypass', kPassword, '-dname', 'c=RU',
+            '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000'
+    }
+}
+
+project.afterEvaluate {
+    // preBuild.dependsOn generateKeystore
 }
 
 flutter {
