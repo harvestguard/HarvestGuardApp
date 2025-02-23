@@ -299,7 +299,14 @@ class HomePageState extends State<HomePage>
                   label: const Padding(
                       padding: EdgeInsets.only(left: 5.0),
                       child: Text('Notifications')),
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.of(context).pushNamed(
+                      '/notifications',
+                      arguments: {
+                        'from': context,
+                      },
+                    );
+                  },
                 ),
                 FilledButton.tonalIcon(
                   style: ButtonStyle(

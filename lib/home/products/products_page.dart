@@ -389,7 +389,7 @@ class _ProductsPageState extends State<ProductsPage>
                                             ),
                                       ),
                                       Text(
-                                        '₱${(item['price'] * 1.00).toStringAsFixed(2)} per item',
+                                        '₱${(item['price'] * 1.00).toStringAsFixed(2)} per ${item['unit']}',
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall!

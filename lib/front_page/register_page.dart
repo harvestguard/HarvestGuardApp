@@ -63,6 +63,56 @@ class _RegisterPageState extends State<RegisterPage> {
   String _otpcode = '';
   String _verificationId = '';
 
+  @override
+  void initState() {
+    super.initState();
+    _unitAddressController.addListener(_updateFullAddress);
+    _selectedCountry = 0; // Assuming default country is Philippines
+    _selectedRegion = null;
+    _selectedProvince = null;
+    _selectedCity = null;
+    _selectedBarangay = null;
+  }
+
+  @override
+  void dispose() {
+    _unitAddressController.removeListener(_updateFullAddress);
+    _unitAddressController.dispose();
+    _firstNameController.dispose();
+    _middleNameController.dispose();
+    _lastNameController.dispose();
+    _numberController.dispose();
+    _emailController.dispose();
+    _addressController.dispose();
+    _zipCodeController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _birthdayController.dispose();
+    super.dispose();
+  }
+
+  void _updateFullAddress() {
+    setState(() {
+      _addressController.text = [
+        _selectedBarangay != null
+            ? ((_barangayItems.firstWhere((item) => item.value == _selectedBarangay).child) as Text).data ?? ''
+            : '',
+        _selectedCity != null
+            ? ((_cityItems.firstWhere((item) => item.value == _selectedCity).child) as Text).data ?? ''
+            : '',
+        _selectedProvince != null
+            ? ((_provinceItems.firstWhere((item) => item.value == _selectedProvince).child) as Text).data ?? ''
+            : '',
+        _selectedRegion != null
+            ? ((_regionItems.firstWhere((item) => item.value == _selectedRegion).child) as Text).data ?? ''
+            : '',
+        'Philippines',
+        _unitAddressController.text,
+      ].where((part) => part.isNotEmpty).join(', ');
+    });
+  }
+
   Future<Map<String, Uint8List>> _resizeImage(File image) async {
     // Decode the image
 
@@ -395,6 +445,7 @@ class _RegisterPageState extends State<RegisterPage> {
         }
       });
     });
+    _updateFullAddress();
   }
 
   Future _getProvinces(int region) async {
@@ -416,6 +467,7 @@ class _RegisterPageState extends State<RegisterPage> {
         }
       });
     });
+    _updateFullAddress();
   }
 
   Future _getCities(int province) async {
@@ -437,6 +489,7 @@ class _RegisterPageState extends State<RegisterPage> {
         }
       });
     });
+    _updateFullAddress();
   }
 
   Future _getBarangays(int city) async {
@@ -457,6 +510,7 @@ class _RegisterPageState extends State<RegisterPage> {
         }
       });
     });
+    _updateFullAddress();
   }
 
   Future<void> _pickImage(ImageSource source) async {

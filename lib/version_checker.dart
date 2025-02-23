@@ -23,6 +23,7 @@ class VersionChecker {
       ValueNotifier<double>(0);
   static const int notificationId = 888;
   static bool _isCancelled = false;
+  static bool hasChecked = false;
   static StreamController<bool>? _downloadController;
 
   static Future<void> checkForUpdate(BuildContext context) async {
@@ -86,7 +87,8 @@ class VersionChecker {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey[200]?.withAlpha(200),
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: MarkdownBody(
@@ -169,14 +171,7 @@ class VersionChecker {
           if (hasPermission) {
             await OpenFile.open(filePath);
           } else {
-            final permissionStatus =
-                await Permission.requestInstallPackages.request();
-            if (permissionStatus.isGranted) {
-              await OpenFile.open(filePath);
-            } else {
-              print(
-                  'Permission denied to install the APK. Please allow installation from unknown sources in your device settings.');
-            }
+            print('Permission denied to install the APK. Please allow installation from unknown sources in your device settings.');
           }
         }
       }
@@ -191,7 +186,7 @@ class VersionChecker {
 
   static Future<void> initNotifications() async {
     const androidInitialize =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/ic_launcher_monochrome');
     const initializationSettings = InitializationSettings(
       android: androidInitialize,
     );
@@ -243,14 +238,11 @@ class VersionChecker {
 
   static Future<bool> _checkInstallPermission() async {
     if (Platform.isAndroid) {
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      if (androidInfo.version.sdkInt >= 26) {
-        final status = await Permission.requestInstallPackages.status;
-        if (status.isDenied) {
-          final result = await Permission.requestInstallPackages.request();
-          if (result.isDenied) {
-            return false;
-          }
+      final status = await Permission.requestInstallPackages.status;
+      if (status.isDenied) {
+        final result = await Permission.requestInstallPackages.request();
+        if (result.isDenied) {
+          return false;
         }
       }
     }

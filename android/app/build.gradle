@@ -55,24 +55,26 @@ android {
 }
 
 task generateKeystore() {
-    exec {
-        workingDir projectDir
-        commandLine 'mkdir', '-p', 'keystore'
+    onlyIf {
+        !file('keystore/release.jks').exists()
     }
-    exec {
-        workingDir projectDir
-        commandLine 'rm', '-f', 'keystore/release.jks'
-    }
-    exec {
-        workingDir projectDir
-        commandLine 'keytool', '-genkey', '-noprompt', '-keystore', 'keystore/release.jks',
-            '-alias', kAlias, '-storepass', sPassword, '-keypass', kPassword, '-dname', 'c=RU',
-            '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000'
+    doLast {
+        exec {
+            workingDir projectDir
+            commandLine 'mkdir', '-p', 'keystore'
+        }
+        exec {
+            workingDir projectDir
+            commandLine 'keytool', '-genkey', '-noprompt', '-keystore', 'keystore/release.jks',
+                '-alias', kAlias, '-storepass', sPassword, '-keypass', kPassword, '-dname', 'c=RU',
+                '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000'
+        }
     }
 }
 
+
 project.afterEvaluate {
-    // preBuild.dependsOn generateKeystore
+    preBuild.dependsOn generateKeystore
 }
 
 flutter {

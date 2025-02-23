@@ -1,15 +1,14 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:harvest_guard/global.dart';
-import 'package:harvest_guard/home/auctions/auction_page.dart';
-import 'package:harvest_guard/home/chats/chats_page.dart';
-import 'package:harvest_guard/services/chat.dart';
+import 'package:image/image.dart' as img;
 
 enum NotificationChannel {
   chat,
@@ -26,12 +25,13 @@ class NotificationDatabase extends ChangeNotifier {
   NotificationDatabase() {
     _initLocalNotifications();
     _initializeNotificationsSubscription();
+    print('INITIALIZED NOTIFICATION DATABASE');
   }
 
   Future<void> _initLocalNotifications() async {
     await localNotif.initialize(
       const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings('@drawable/ic_launcher_monochrome'),
         iOS: DarwinInitializationSettings(),
       ),
     );
@@ -47,7 +47,7 @@ class NotificationDatabase extends ChangeNotifier {
         .listen((snapshot) {
       // Filter notifications similar to Next.js logic.
       final filtered = snapshot.docs.where((doc) {
-        final data = doc.data() ;
+        final data = doc.data();
         if (data['type'] == 'newMessagePrivate' ||
             data['type'] == 'updateMessagePrivate' ||
             data['type'] == 'deleteMessagePrivate') {
@@ -62,14 +62,16 @@ class NotificationDatabase extends ChangeNotifier {
         return true;
       }).toList();
 
-      notifications =
-          filtered.map((doc) => doc.data()).toList();
+      notifications = filtered.map((doc) => doc.data()).toList();
       notifyListeners();
+
+      print(notifications);
 
       if (notifications.isNotEmpty) {
         // Sort notifications by timestamp descending.
         notifications.sort((a, b) =>
-            (b['timestamp'] as int).compareTo(a['timestamp'] as int));
+            (int.parse(b['timestamp'].seconds.toString()))
+                .compareTo(int.parse(a['timestamp'].seconds.toString())));
         final latest = notifications.first;
         // Only show a local notification if the sender is not the current user.
         if (latest['sender'] != currentUser.uid) {
@@ -84,55 +86,61 @@ class NotificationDatabase extends ChangeNotifier {
     String title = notif['type'] ?? 'Notification';
     String concise = notif['message'] ?? '';
 
-    switch (notif['type']) {
-      case 'newBid':
-        title = 'New Bid';
-        concise = 'A new bid has been received.';
-        break;
-      case 'newAuction':
-        title = 'New Auction';
-        concise = notif['auctionDetails'] != null &&
-                notif['auctionDetails']['adminName'] != null
-            ? 'New auction created by ${notif['auctionDetails']['adminName']['firstName']} ${notif['auctionDetails']['adminName']['lastName']}.'
-            : 'A new auction has been created.';
-        break;
-      case 'auctionUpdate':
-        title = 'Auction Update';
-        concise = 'Auction updated for product ${notif['auctionDetails']?['product'] ?? "N/A"}.';
-        break;
-      case 'newMessagePrivate':
-        {
-          final sender = (notif['from'] is Map)
-              ? '${notif['from']['name']['firstName']} ${notif['from']['name']['lastName']}'
-              : notif['from'];
-          title = 'New Message from $sender';
-          concise = notif['message'] ?? 'You have received a new message.';
-        }
-        break;
-      case 'updateMessagePrivate':
-        title = 'Message Update';
-        concise = 'A message was updated.';
-        break;
-      case 'newReactPrivate':
-        title = 'New Reaction';
-        concise = 'There is a new reaction on a message.';
-        break;
-      case 'deleteMessagePrivate':
-        title = 'Message Deleted';
-        concise = 'A message was deleted.';
-        break;
-      case "newProduct":
-        final sellerName = notif['productDetails']['sellerName'] ? '${notif['productDetails']['sellerName']['firstName']} ${notif['productDetails']['sellerName']['lastName']}' : '';
-        concise = 'New product added by $sellerName.';
-        title = 'New Product';
-        break;
+    // Determine if this is a chat notification.
+    bool isChatNotification = notif['type'] == 'newMessagePrivate' ||
+        notif['type'] == 'updateMessagePrivate' ||
+        notif['type'] == 'deleteMessagePrivate';
+
+    if (isChatNotification) {
+      final sender = (notif['from'] is Map)
+          ? '${notif['from']['name']['firstName']} ${notif['from']['name']['lastName']}'
+          : notif['from'];
+      title = 'New Message from $sender';
+      concise = notif['message'] ?? 'You have received a new message.';
+    } else {
+      switch (notif['type']) {
+        case 'newBid':
+          title = 'New Bid';
+          concise = 'A new bid has been received.';
+          break;
+        case 'newAuction':
+          title = 'New Auction';
+          concise = (notif['auctionDetails'] != null &&
+                  notif['auctionDetails']['adminName'] != null)
+              ? 'New auction created by ${notif['auctionDetails']['adminName']['firstName']} ${notif['auctionDetails']['adminName']['lastName']}.'
+              : 'A new auction has been created.';
+          break;
+        case 'auctionUpdate':
+          title = 'Auction Update';
+          concise =
+              'Auction updated for product ${notif['auctionDetails']?['product'] ?? "N/A"}.';
+          break;
+        case 'newReactPrivate':
+          title = 'New Reaction';
+          concise = 'There is a new reaction on a message.';
+          break;
+        case 'deleteMessagePrivate':
+          title = 'Message Deleted';
+          concise = 'A message was deleted.';
+          break;
+        case "newProduct":
+          final sellerName = notif['productDetails']['sellerName'] != null
+              ? '${notif['productDetails']['sellerName']['firstName']} ${notif['productDetails']['sellerName']['lastName']}'
+              : '';
+          concise = 'New product added by $sellerName.';
+          title = 'New Product';
+          break;
         case "updateProduct":
-          concise = 'Product updated: ${notif['productDetails']['product'] ?? "N/A"}.';
+          concise =
+              'Product updated: ${notif['productDetails']['product'] ?? "N/A"}.';
           title = 'Product Update';
           break;
-        case "newShipment":          
-          final sellerName = notif['shipmentDetails']['sellerName'] ? '${notif['shipmentDetails']['sellerName']['firstName']} ${notif['shipmentDetails']['sellerName']['lastName']}' : "";
-          concise = 'New shipment created by $sellerName for ${notif['shipmentDetails']['product'] ?? "N/A"}.';
+        case "newShipment":
+          final sellerName = notif['shipmentDetails']['sellerName'] != null
+              ? '${notif['shipmentDetails']['sellerName']['firstName']} ${notif['shipmentDetails']['sellerName']['lastName']}'
+              : "";
+          concise =
+              'New shipment created by $sellerName for ${notif['shipmentDetails']['product'] ?? "N/A"}.';
           title = 'New Shipment';
           break;
         case "updateShipment":
@@ -140,7 +148,8 @@ class NotificationDatabase extends ChangeNotifier {
           title = "Shipment Update";
           break;
         case "shipmentStatus":
-          concise = 'Shipment status changed to ${notif['shipmentDetails']['status'] ?? "N/A"}.';
+          concise =
+              'Shipment status changed to ${notif['shipmentDetails']['status'] ?? "N/A"}.';
           title = "Shipment Status";
           break;
         case "shipmentLocation":
@@ -148,8 +157,14 @@ class NotificationDatabase extends ChangeNotifier {
           title = "Shipment Location";
           break;
         case "newUser":
-          final fullName = '${notif['userDetails']['firstName'] ?? ""} ${notif['userDetails']['middleName'] ?? ""} ${notif['userDetails']['lastName'] ?? ""}'.trim();
-          final userType = notif['userDetails']['isSeller'] ? "Seller" : notif['userDetails']['isDeliveryAgent'] ? "Delivery Agent" : "User";
+          final fullName =
+              '${notif['userDetails']['firstName'] ?? ""} ${notif['userDetails']['middleName'] ?? ""} ${notif['userDetails']['lastName'] ?? ""}'
+                  .trim();
+          final userType = notif['userDetails']['isSeller'] == true
+              ? "Seller"
+              : notif['userDetails']['isDeliveryAgent'] == true
+                  ? "Delivery Agent"
+                  : "User";
           concise = 'Registered as $userType: $fullName.';
           title = "New User";
           break;
@@ -159,6 +174,100 @@ class NotificationDatabase extends ChangeNotifier {
           break;
         default:
           concise = notif['message'];
+      }
+    }
+
+    // Choose channel id and name based on notification type.
+    final String channelId =
+        isChatNotification ? 'messages_channel' : 'notifications_channel';
+    final String channelName =
+        isChatNotification ? 'Message Notifications' : 'Notifications';
+
+    AndroidNotificationDetails androidDetails;
+
+    if (isChatNotification) {
+      // Use Android's MessagingStyle for conversation notifications.
+      final String senderName = (notif['from'] is Map)
+          ? '${notif['from']['name']['firstName']} ${notif['from']['name']['lastName']}'
+          : notif['from'] ?? 'Unknown';
+
+      // get the image from the database Image.network(notif['from']['thumbProfileImage'])
+
+      final imageThumbUrl = notif['from']['thumbProfileImage'] ?? '';
+      final Uri imageUri = Uri.parse(imageThumbUrl);
+      final ByteData imageData = await NetworkAssetBundle(imageUri).load("");
+      final Uint8List originalBytes = imageData.buffer.asUint8List();
+
+      // Decode the image using the image package.
+      final img.Image? originalImage = img.decodeImage(originalBytes);
+      Uint8List imageBytes;
+      if (originalImage != null) {
+        // Crop the image to a square.
+        int size = originalImage.width < originalImage.height
+            ? originalImage.width
+            : originalImage.height;
+        final img.Image squareImage =
+            img.copyResizeCropSquare(originalImage, size: size);
+
+        // Create a circular crop by applying a circular mask.
+        final img.Image circularImage = img.Image(width: size, height: size);
+        int center = size ~/ 2;
+        double radius = size / 2;
+        for (int y = 0; y < size; y++) {
+          for (int x = 0; x < size; x++) {
+            final dx = x - center;
+            final dy = y - center;
+            if (sqrt(dx * dx + dy * dy) <= radius) {
+              circularImage.setPixel(x, y, squareImage.getPixel(x, y));
+            } else {
+              circularImage.setPixel(x, y, img.ColorFloat16.rgba(0, 0, 0, 0));
+            }
+          }
+        }
+        imageBytes = Uint8List.fromList(img.encodePng(circularImage));
+      } else {
+        imageBytes = originalBytes;
+      }
+
+      final person =
+          Person(name: senderName, icon: ByteArrayAndroidIcon(imageBytes));
+      androidDetails = AndroidNotificationDetails(
+        channelId,
+        channelName,
+        channelDescription: 'Chat messages',
+        importance: Importance.max,
+        priority: Priority.high,
+        enableLights: true,
+        enableVibration: true,
+        playSound: true,
+        showWhen: false,
+        icon: '@drawable/ic_launcher',
+        styleInformation: MessagingStyleInformation(
+          person,
+          groupConversation: true,
+          messages: [
+            Message(
+              concise,
+              DateTime.now(),
+              person,
+            )
+          ],
+        ),
+      );
+    } else {
+      // Use normal notification style.
+      androidDetails = AndroidNotificationDetails(
+        channelId,
+        channelName,
+        icon: '@drawable/ic_launcher',
+        channelDescription: 'General notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+        enableLights: true,
+        enableVibration: true,
+        playSound: true,
+        showWhen: false,
+      );
     }
 
     await localNotif.show(
@@ -166,17 +275,7 @@ class NotificationDatabase extends ChangeNotifier {
       title,
       concise,
       NotificationDetails(
-        android: AndroidNotificationDetails(
-          'notifications_channel',
-          'Notifications',
-          channelDescription: 'General notifications',
-          importance: Importance.max,
-          priority: Priority.high,
-          enableLights: true,
-          enableVibration: true,
-          playSound: true,
-          showWhen: false,
-        ),
+        android: androidDetails,
         iOS: const DarwinNotificationDetails(),
       ),
     );
@@ -184,8 +283,8 @@ class NotificationDatabase extends ChangeNotifier {
 
   @override
   void dispose() {
-    _notificationSubscription?.cancel();
-    super.dispose();
+    // _notificationSubscription?.cancel();
+    // super.dispose();
   }
 }
 
@@ -197,6 +296,7 @@ class ChatDatabase extends ChangeNotifier {
 
   ChatDatabase() {
     _initializeMainSubscription();
+    print('INITIALIZED CHAT DATABASE');
   }
 
   void _initializeMainSubscription() {
@@ -255,7 +355,7 @@ class ChatDatabase extends ChangeNotifier {
 
             for (var message in event.docChanges) {
               if (_disposed) break; // Break loop if disposed
-              
+
               if (message.type == DocumentChangeType.added ||
                   message.type == DocumentChangeType.modified) {
                 chatsMap[element.doc.id]!['messages'][message.doc.id] =
@@ -296,8 +396,8 @@ class ChatDatabase extends ChangeNotifier {
 
   @override
   void dispose() {
-    _mainSubscription?.cancel();
-    super.dispose();
+    // _mainSubscription?.cancel();
+    // super.dispose();
   }
 }
 
@@ -307,7 +407,10 @@ class AuctionDatabase extends ChangeNotifier {
   bool firstRun = true;
 
   AuctionDatabase() {
-    FirebaseFirestore.instance.collection('auctions').snapshots().listen((event) {
+    FirebaseFirestore.instance
+        .collection('auctions')
+        .snapshots()
+        .listen((event) {
       for (var element in event.docChanges) {
         print(
             'list: ${element.type} ${auctionEvents.containsKey(element.doc.id)}');
@@ -362,8 +465,7 @@ class AuctionDatabase extends ChangeNotifier {
                   Map<dynamic, dynamic> user =
                       value.snapshot.value! as Map<dynamic, dynamic>;
                   auctionsMap[element.doc.id]['bidUid'][bid.doc.id]
-                          ['thumbProfileImage'] =
-                      user['thumbProfileImage'];
+                      ['thumbProfileImage'] = user['thumbProfileImage'];
                   auctionsMap[element.doc.id]['bidUid'][bid.doc.id]['name'] =
                       '${user['firstName']} ${user['middleName']} ${user['lastName']}';
                   Future.delayed(const Duration(milliseconds: 250), () {
@@ -392,6 +494,7 @@ class AuctionDatabase extends ChangeNotifier {
         }
       }
     });
+    print('INITIALIZED AUCTION DATABASE');
   }
 
   void updateData() {
@@ -400,10 +503,10 @@ class AuctionDatabase extends ChangeNotifier {
 
   @override
   void dispose() {
-    for (var sub in auctionEvents.values) {
-      sub.cancel();
-    }
-    super.dispose();
+    // for (var sub in auctionEvents.values) {
+    //   sub.cancel();
+    // }
+    // super.dispose();
   }
 }
 
@@ -412,11 +515,12 @@ class ShipmentDatabase extends ChangeNotifier {
   Map<String, Map<String, dynamic>> get shipments => _shipments;
   bool _isLoading = true;
   bool get isLoading => _isLoading;
-  
+
   StreamSubscription<QuerySnapshot>? _shipmentsSubscription;
-  
+
   ShipmentDatabase() {
     _setupShipmentsListener();
+    print('INITIALIZED SHIPMENT DATABASE');
   }
 
   void _setupShipmentsListener() {
@@ -428,8 +532,8 @@ class ShipmentDatabase extends ChangeNotifier {
         .where(Filter('buyerUid', isEqualTo: user.uid))
         .snapshots()
         .listen((snapshot) {
-          _handleShipmentChanges(snapshot);
-        });
+      _handleShipmentChanges(snapshot);
+    });
   }
 
   Future<void> _handleShipmentChanges(QuerySnapshot snapshot) async {
@@ -457,13 +561,15 @@ class ShipmentDatabase extends ChangeNotifier {
 
   Future<void> _handleModifiedShipment(DocumentSnapshot doc) async {
     final newData = doc.data() as Map<String, dynamic>;
-    final oldData = _shipments[doc.id]?['shippingInfo'] as Map<String, dynamic>?;
+    final oldData =
+        _shipments[doc.id]?['shippingInfo'] as Map<String, dynamic>?;
     if (oldData != null) {
-      final oldStatus = _getLatestStatus(oldData['status'] as Map<String, dynamic>?);
-      final newStatus = _getLatestStatus(newData['status'] as Map<String, dynamic>?);
+      final oldStatus =
+          _getLatestStatus(oldData['status'] as Map<String, dynamic>?);
+      final newStatus =
+          _getLatestStatus(newData['status'] as Map<String, dynamic>?);
       if (oldStatus != newStatus) {
         await _processShipmentDocument(doc.id, newData);
-        // Removed shipment status update notification.
       }
     }
   }
@@ -481,7 +587,8 @@ class ShipmentDatabase extends ChangeNotifier {
     return statusMap[latestEpoch.toString()] ?? 'Pending';
   }
 
-  Future<void> _processShipmentDocument(String docId, Map<String, dynamic> shipData) async {
+  Future<void> _processShipmentDocument(
+      String docId, Map<String, dynamic> shipData) async {
     try {
       final futures = await Future.wait([
         FirebaseFirestore.instance
@@ -504,12 +611,12 @@ class ShipmentDatabase extends ChangeNotifier {
       final buyerSnapshot = futures[1] as DataSnapshot;
       final auctionDoc = futures[2] as DocumentSnapshot;
 
-      final Map<String, dynamic> buyerData = 
+      final Map<String, dynamic> buyerData =
           Map<String, dynamic>.from(buyerSnapshot.value as Map? ?? {});
-      final Map<String, dynamic> productData = 
-          Map<String, dynamic>.from(productDoc.data() as Map<String, dynamic>? ?? {});
-      final Map<String, dynamic> auctionData = 
-          Map<String, dynamic>.from(auctionDoc.data() as Map<String, dynamic>? ?? {});
+      final Map<String, dynamic> productData = Map<String, dynamic>.from(
+          productDoc.data() as Map<String, dynamic>? ?? {});
+      final Map<String, dynamic> auctionData = Map<String, dynamic>.from(
+          auctionDoc.data() as Map<String, dynamic>? ?? {});
 
       auctionData['buyerName'] =
           '${buyerData['firstName']} ${buyerData['middleName']} ${buyerData['lastName']}';
@@ -531,10 +638,7 @@ class ShipmentDatabase extends ChangeNotifier {
 
   @override
   void dispose() {
-    _shipmentsSubscription?.cancel();
-    super.dispose();
+    // _shipmentsSubscription?.cancel();
+    // super.dispose();
   }
 }
-
-
-
