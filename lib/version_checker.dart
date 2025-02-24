@@ -26,7 +26,7 @@ class VersionChecker {
   static bool hasChecked = false;
   static StreamController<bool>? _downloadController;
 
-  static Future<void> checkForUpdate(BuildContext context) async {
+  static Future<bool> checkForUpdate(BuildContext context) async {
     print("Checking for updates...");
     try {
       // Get current version
@@ -46,11 +46,14 @@ class VersionChecker {
 
         if (_isUpdateAvailable(currentVersion, latestVersion)) {
           _showUpdateDialog(context, downloadUrl, latestVersion, data['body']);
+          return true;
         }
       }
     } catch (e) {
       print('Error checking for updates: $e');
     }
+
+    return false;
   }
 
   static bool _isUpdateAvailable(String currentVersion, String latestVersion) {

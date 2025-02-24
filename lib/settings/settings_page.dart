@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:harvest_guard/front_page.dart';
 import 'package:harvest_guard/global.dart';
 import 'package:harvest_guard/settings/settings_provider.dart';
+import 'package:harvest_guard/version_checker.dart';
 import 'package:provider/provider.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -78,6 +79,30 @@ class _SettingsPageState extends State<SettingsPage>
                     },
                   ),
                 ),
+                ListTile(
+                    title: const Text('Check for Updates'),
+                    onTap: () async {
+                      final hasNew =
+                          await VersionChecker.checkForUpdate(context);
+
+                      if (!hasNew) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('No new updates available'),
+                          ),
+                        );
+                      }
+                    }),
+                ListTile(
+                  title: const Text('Reset Settings'),
+                  onTap: () => setState(() {
+                    final provider =
+                        Provider.of<SettingsProvider>(context, listen: false);
+                    provider.setThemeMode(ThemeMode.system);
+                    provider.setDynamicTheming(false);
+                  }),
+                ),
+
                 // logout button
                 ListTile(
                   title: const Text('Logout'),
@@ -133,15 +158,6 @@ class _SettingsPageState extends State<SettingsPage>
                     });
                   },
                 ),
-                ElevatedButton(
-                  child: const Text('Reset'),
-                  onPressed: () => setState(() {
-                    final provider =
-                        Provider.of<SettingsProvider>(context, listen: false);
-                    provider.setThemeMode(ThemeMode.system);
-                    provider.setDynamicTheming(false);
-                  }),
-                )
               ],
             ),
           ),
