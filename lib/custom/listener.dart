@@ -241,7 +241,7 @@ class NotificationDatabase extends ChangeNotifier {
         enableVibration: true,
         playSound: true,
         showWhen: false,
-        icon: '@drawable/ic_launcher',
+        icon: '@drawable/ic_launcher_monochrome',
         styleInformation: MessagingStyleInformation(
           person,
           groupConversation: true,
@@ -259,7 +259,7 @@ class NotificationDatabase extends ChangeNotifier {
       androidDetails = AndroidNotificationDetails(
         channelId,
         channelName,
-        icon: '@drawable/ic_launcher',
+        icon: '@drawable/ic_launcher_monochrome',
         channelDescription: 'General notifications',
         importance: Importance.max,
         priority: Priority.high,
@@ -285,6 +285,11 @@ class NotificationDatabase extends ChangeNotifier {
   void dispose() {
     // _notificationSubscription?.cancel();
     // super.dispose();
+  }
+
+  void forceDispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
   }
 }
 
@@ -399,6 +404,11 @@ class ChatDatabase extends ChangeNotifier {
     // _mainSubscription?.cancel();
     // super.dispose();
   }
+
+  void forceDispose() {
+    _mainSubscription?.cancel();
+    super.dispose();
+  }
 }
 
 class AuctionDatabase extends ChangeNotifier {
@@ -507,6 +517,13 @@ class AuctionDatabase extends ChangeNotifier {
     //   sub.cancel();
     // }
     // super.dispose();
+  }
+
+  void forceDispose() {
+    for (var sub in auctionEvents.values) {
+      sub.cancel();
+    }
+    super.dispose();
   }
 }
 
@@ -640,5 +657,10 @@ class ShipmentDatabase extends ChangeNotifier {
   void dispose() {
     // _shipmentsSubscription?.cancel();
     // super.dispose();
+  }
+
+  void forceDispose() {
+    _shipmentsSubscription?.cancel();
+    super.dispose();
   }
 }

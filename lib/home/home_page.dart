@@ -98,7 +98,10 @@ class HomePageState extends State<HomePage>
   late String _profileImage = '';
   @override
   void initState() {
-    notificationDatabase;
+    notificationDatabase = NotificationDatabase();
+    chatDatabase = ChatDatabase();
+    auctionDatabase = AuctionDatabase();
+    shipmentDatabase = ShipmentDatabase();
 
     FirebaseDatabase.instance
         .ref()
@@ -355,6 +358,7 @@ class HomePageState extends State<HomePage>
                           ),
                           TextButton(
                             onPressed: () {
+                              
                               FirebaseAuth.instance.signOut().then((value) => {
                                     //clear the stack and navigate to the initial page
                                     Navigator.of(context).pushAndRemoveUntil(
@@ -365,6 +369,11 @@ class HomePageState extends State<HomePage>
                                       (Route<dynamic> route) => false,
                                     ),
 
+                                    chatDatabase.forceDispose(),
+                                    notificationDatabase.forceDispose(),
+                                    auctionDatabase.forceDispose(),
+                                    shipmentDatabase.forceDispose(),
+                                    
                                     //clear the stack and navigate to the home page
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(

@@ -442,7 +442,6 @@ class _RegisterPageState extends State<RegisterPage> {
                         'thumbProfileImage': thumbImageUrl,
                       });
 
-                      if (!context.mounted) return;
                       Navigator.of(context).pop();
                       Navigator.of(context).pushNamedAndRemoveUntil(
                         '/home',
@@ -450,7 +449,6 @@ class _RegisterPageState extends State<RegisterPage> {
                         (Route<dynamic> route) => false,
                       );
 
-                      if (!context.mounted) return;
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -458,7 +456,6 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                       );
                     } catch (error) {
-                      if (!context.mounted) return;
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -474,7 +471,6 @@ class _RegisterPageState extends State<RegisterPage> {
         },
       );
     }).catchError((error) {
-      // Registration failed
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

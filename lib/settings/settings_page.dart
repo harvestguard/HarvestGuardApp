@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:harvest_guard/front_page.dart';
+import 'package:harvest_guard/global.dart';
 import 'package:harvest_guard/settings/settings_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -57,8 +58,8 @@ class _SettingsPageState extends State<SettingsPage>
                         const InputDecorationTheme(filled: true),
                     onSelected: (ThemeMode? mode) {
                       setState(() {
-                        final provider =
-                            Provider.of<SettingsProvider>(context, listen: false);
+                        final provider = Provider.of<SettingsProvider>(context,
+                            listen: false);
                         provider.setThemeMode(mode!);
                       });
                     },
@@ -70,8 +71,8 @@ class _SettingsPageState extends State<SettingsPage>
                     value: settingsProvider.isDynamicTheming,
                     onChanged: (bool value) {
                       setState(() {
-                        final provider =
-                            Provider.of<SettingsProvider>(context, listen: false);
+                        final provider = Provider.of<SettingsProvider>(context,
+                            listen: false);
                         provider.setDynamicTheming(value);
                       });
                     },
@@ -82,38 +83,53 @@ class _SettingsPageState extends State<SettingsPage>
                   title: const Text('Logout'),
                   onTap: () {
                     setState(() {
-                          showDialog(
-                              context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Logout'),
-                                  content:
-                                    const Text('Are you sure you want to logout?'),
-                                  actions: <Widget>[
-                                    TextButton(
+                      showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                                title: const Text('Logout'),
+                                content: const Text(
+                                    'Are you sure you want to logout?'),
+                                actions: <Widget>[
+                                  TextButton(
                                     onPressed: () {
                                       Navigator.of(context).pop();
                                     },
                                     child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
+                                  ),
+                                  TextButton(
                                     onPressed: () {
-                                      FirebaseAuth.instance.signOut().then((value) => {
-                                        //clear the stack and navigate to the initial page
-                                        Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const InitialPage()), (Route<dynamic> route) => false),
-                                        
-                                        //clear the stack and navigate to the home page
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Logged out successfully'),
-                                          ),
-                                        )
-                                      }
-                                      );
+                                      FirebaseAuth.instance
+                                          .signOut()
+                                          .then((value) => {
+                                                //clear the stack and navigate to the initial page
+                                                Navigator.of(context)
+                                                    .pushAndRemoveUntil(
+                                                        MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                const InitialPage()),
+                                                        (Route<dynamic>
+                                                                route) =>
+                                                            false),
+
+                                                chatDatabase.forceDispose(),
+                                                notificationDatabase
+                                                    .forceDispose(),
+                                                auctionDatabase.forceDispose(),
+                                                shipmentDatabase.forceDispose(),
+                                                //clear the stack and navigate to the home page
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                        'Logged out successfully'),
+                                                  ),
+                                                )
+                                              });
                                     },
                                     child: const Text('Logout'),
-                                    ),
-                                  ],
-                                  ));
+                                  ),
+                                ],
+                              ));
                     });
                   },
                 ),

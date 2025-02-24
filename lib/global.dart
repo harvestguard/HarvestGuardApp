@@ -7,10 +7,10 @@ GlobalKey<NavigatorState> navItemChats = GlobalKey();
 GlobalKey<NavigatorState> navItemAuctions = GlobalKey();
 GlobalKey<NavigatorState> navItemShipments = GlobalKey();
 GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
-ChatDatabase chatDatabase = ChatDatabase();
-AuctionDatabase auctionDatabase = AuctionDatabase();
-ShipmentDatabase shipmentDatabase = ShipmentDatabase();
-NotificationDatabase notificationDatabase = NotificationDatabase();
+late ChatDatabase chatDatabase;
+late AuctionDatabase auctionDatabase;
+late ShipmentDatabase shipmentDatabase;
+late NotificationDatabase notificationDatabase;
 // global key for theme switch between material you and custom
 
 
