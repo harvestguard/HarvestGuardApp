@@ -49,6 +49,7 @@ dependencies:
   flutter_markdown: ^0.7.5
   open_file: ^3.5.10
   firebase_app_check: ^0.3.2+3
+  install_plugin: ^2.1.0
 
 dev_dependencies:
   flutter_test:
