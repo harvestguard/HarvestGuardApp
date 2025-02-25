@@ -64,7 +64,7 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscureConfirmPassText = true;
   File? _image;
   String _otpcode = '';
-  String _verificationId = '';
+  String _userCredentialUid = '';
 
   @override
   void initState() {
@@ -297,184 +297,183 @@ class _RegisterPageState extends State<RegisterPage> {
 
     showLoadingPopup(context);
 
-    // Perform registration process
-    FirebaseAuth.instance
-        .createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    )
-        .then((value) async {
-      await FirebaseAuth.instance.verifyPhoneNumber(
-        phoneNumber: number,
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          await FirebaseAuth.instance.currentUser
-              ?.updatePhoneNumber(credential);
-        },
-        verificationFailed: (FirebaseAuthException e) {
-          Navigator.of(context).pop();
-          if (e.code == 'invalid-phone-number') {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('The provided phone number is not valid.'),
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content:
-                    Text('An error occurred while verifying the phone number.'),
-              ),
-            );
-          }
-        },
-        codeSent: (String verificationId, int? resendToken) {
-          setState(() {
-            _verificationId = verificationId;
-          });
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {},
-      );
+    await FirebaseAuth.instance
+        .verifyPhoneNumber(
+      phoneNumber: number,
+      timeout: const Duration(seconds: 120),
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        print('Verification completed');
 
-      if (!context.mounted) return;
+        AuthCredential emailCredential = EmailAuthProvider.credential(
+          email: email,
+          password: password,
+        );
 
-      Navigator.of(context).pop();
+        await FirebaseAuth.instance.currentUser!
+            .linkWithCredential(emailCredential);
 
-      showDialog(
-        context: context,
-        barrierDismissible: false, // Make the dialog not cancellable
-        builder: (BuildContext context) {
-          return PopScope(
-            canPop: false, // Disable back button
-            child: AlertDialog(
-              title: const Text('Enter OTP'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Enter the OTP code sent to your number $number.'),
-                  TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        _otpcode = value;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(FluentIcons.number_symbol_24_filled),
-                      labelText: 'OTP code',
-                      hintText: 'Enter OTP code',
-                      helperText: 'OTP code must be a 6 digit number',
-                      filled: true,
+        // Registration successful
+        await FirebaseDatabase.instance
+            .ref()
+            .child('users')
+            .child(_userCredentialUid)
+            .set({
+          'firstName': firstName,
+          'middleName': middleName,
+          'lastName': lastName,
+          'suffix': _selectedSuffix ?? '',
+          'gender': _selectedGender,
+          'birthday': _birthdayController.text,
+          'number': number,
+          'email': email,
+          'country': _selectedCountry,
+          'region': _selectedRegion,
+          'province': _selectedProvince,
+          'city': _selectedCity,
+          'barangay': _selectedBarangay,
+          'unitAddress': unitAddress,
+          'address': address,
+          'zipCode': zipCode,
+          'username': username,
+          'profileImage': '',
+          'thumbProfileImage': '',
+        });
+
+        Reference ref = FirebaseStorage.instance
+            .ref()
+            .child('images')
+            .child(_userCredentialUid);
+
+        Map<String, Uint8List> bytes = await _resizeImage(_image!);
+
+        // Upload the resized image
+        UploadTask uploadTask =
+            ref.child('profile_image').putData(bytes['normal']!);
+        TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => null);
+        String imageUrl = await taskSnapshot.ref.getDownloadURL();
+
+        // Upload the resized thumbnail image
+        uploadTask =
+            ref.child('thumb_profile_image').putData(bytes['thumbnail']!);
+        taskSnapshot = await uploadTask.whenComplete(() => null);
+        String thumbImageUrl = await taskSnapshot.ref.getDownloadURL();
+
+        await FirebaseDatabase.instance
+            .ref()
+            .child('users')
+            .child(_userCredentialUid)
+            .update({
+          'profileImage': imageUrl,
+          'thumbProfileImage': thumbImageUrl,
+        });
+
+        Navigator.of(context).pop();
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/home',
+          arguments: {'from': context},
+          (Route<dynamic> route) => false,
+        );
+
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully'),
+          ),
+        );
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        Navigator.of(context).pop();
+        if (e.code == 'invalid-phone-number') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('The provided phone number is not valid.'),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('An error occurred while verifying the phone number.'),
+            ),
+          );
+        }
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        String otpcode = "";
+        Navigator.of(context).pop();
+        showDialog(
+          context: context,
+          barrierDismissible: false, // Make the dialog not cancellable
+          builder: (BuildContext context) {
+            return PopScope(
+              canPop: false, // Disable back button
+              child: AlertDialog(
+                title: const Text('Enter OTP'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Enter the OTP code sent to your number $number.'),
+                    TextField(
+                      onChanged: (value) {
+                        setState(() {
+                          otpcode = value;
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(FluentIcons.number_symbol_24_filled),
+                        labelText: 'OTP code',
+                        hintText: 'Enter OTP code',
+                        helperText: 'OTP code must be a 6 digit number',
+                        filled: true,
+                      ),
                     ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    child: const Text('Submit'),
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+
+                      try {
+                        final AuthCredential credential =
+                            PhoneAuthProvider.credential(
+                                verificationId: verificationId,
+                                smsCode: otpcode);
+
+                        showLoadingPopup(context);
+                        FirebaseAuth.instance
+                            .signInWithCredential(credential)
+                            .then((value) {
+                          setState(() {
+                            _userCredentialUid = value.user!.uid;
+                          });
+                        });
+                      } catch (error) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content:
+                                Text('Error occurred: ${error.toString()}'),
+                          ),
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  child: const Text('Submit'),
-                  onPressed: () async {
-                    if (!context.mounted) return;
-                    Navigator.of(context).pop();
-                    showLoadingPopup(context);
-
-                    try {
-                      final AuthCredential credential =
-                          PhoneAuthProvider.credential(
-                              verificationId: _verificationId,
-                              smsCode: _otpcode);
-                      await FirebaseAuth.instance.currentUser!
-                          .linkWithCredential(credential);
-
-                      // Registration successful
-                      await FirebaseDatabase.instance
-                          .ref()
-                          .child('users')
-                          .child(value.user!.uid)
-                          .set({
-                        'firstName': firstName,
-                        'middleName': middleName,
-                        'lastName': lastName,
-                        'suffix': _selectedSuffix ?? '',
-                        'gender': _selectedGender,
-                        'birthday': _birthdayController.text,
-                        'number': number,
-                        'email': email,
-                        'country': _selectedCountry,
-                        'region': _selectedRegion,
-                        'province': _selectedProvince,
-                        'city': _selectedCity,
-                        'barangay': _selectedBarangay,
-                        'unitAddress': unitAddress,
-                        'address': address,
-                        'zipCode': zipCode,
-                        'username': username,
-                        'profileImage': '',
-                        'thumbProfileImage': '',
-                      });
-
-                      Reference ref = FirebaseStorage.instance
-                          .ref()
-                          .child('images')
-                          .child(value.user!.uid);
-
-                      Map<String, Uint8List> bytes =
-                          await _resizeImage(_image!);
-
-                      // Upload the resized image
-                      UploadTask uploadTask =
-                          ref.child('profile_image').putData(bytes['normal']!);
-                      TaskSnapshot taskSnapshot =
-                          await uploadTask.whenComplete(() => null);
-                      String imageUrl = await taskSnapshot.ref.getDownloadURL();
-
-                      // Upload the resized thumbnail image
-                      uploadTask = ref
-                          .child('thumb_profile_image')
-                          .putData(bytes['thumbnail']!);
-                      taskSnapshot = await uploadTask.whenComplete(() => null);
-                      String thumbImageUrl =
-                          await taskSnapshot.ref.getDownloadURL();
-
-                      await FirebaseDatabase.instance
-                          .ref()
-                          .child('users')
-                          .child(value.user!.uid)
-                          .update({
-                        'profileImage': imageUrl,
-                        'thumbProfileImage': thumbImageUrl,
-                      });
-
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        '/home',
-                        arguments: {'from': context},
-                        (Route<dynamic> route) => false,
-                      );
-
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Account created successfully'),
-                        ),
-                      );
-                    } catch (error) {
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error occurred: ${error.toString()}'),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    }).catchError((error) {
+            );
+          },
+        );
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {},
+    )
+        .catchError((error) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: ${error.toString()}'),
+          content:
+              Text('Error occured in verifying number: ${error.toString()}'),
         ),
       );
     });
