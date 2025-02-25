@@ -64,8 +64,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassText = true;
   bool _obscureConfirmPassText = true;
   File? _image;
-  String _otpcode = '';
-  String _userCredentialUid = '';
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -303,76 +301,7 @@ class _RegisterPageState extends State<RegisterPage> {
         phoneNumber: number,
         timeout: const Duration(seconds: 120),
         verificationCompleted: (PhoneAuthCredential credential) async {
-          print('Verification completed');
-
-          // Registration successful
-          await FirebaseDatabase.instance
-              .ref()
-              .child('users')
-              .child(_userCredentialUid)
-              .set({
-            'firstName': firstName,
-            'middleName': middleName,
-            'lastName': lastName,
-            'suffix': _selectedSuffix ?? '',
-            'gender': _selectedGender,
-            'birthday': _birthdayController.text,
-            'number': number,
-            'email': email,
-            'country': _selectedCountry,
-            'region': _selectedRegion,
-            'province': _selectedProvince,
-            'city': _selectedCity,
-            'barangay': _selectedBarangay,
-            'unitAddress': unitAddress,
-            'address': address,
-            'zipCode': zipCode,
-            'username': username,
-            'profileImage': '',
-            'thumbProfileImage': '',
-          });
-
-          Reference ref = FirebaseStorage.instance
-              .ref()
-              .child('images')
-              .child(_userCredentialUid);
-
-          Map<String, Uint8List> bytes = await _resizeImage(_image!);
-
-          // Upload the resized image
-          UploadTask uploadTask =
-              ref.child('profile_image').putData(bytes['normal']!);
-          TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => null);
-          String imageUrl = await taskSnapshot.ref.getDownloadURL();
-
-          // Upload the resized thumbnail image
-          uploadTask =
-              ref.child('thumb_profile_image').putData(bytes['thumbnail']!);
-          taskSnapshot = await uploadTask.whenComplete(() => null);
-          String thumbImageUrl = await taskSnapshot.ref.getDownloadURL();
-
-          await FirebaseDatabase.instance
-              .ref()
-              .child('users')
-              .child(_userCredentialUid)
-              .update({
-            'profileImage': imageUrl,
-            'thumbProfileImage': thumbImageUrl,
-          });
-
-          Navigator.of(loadingPopup).pop();
-          Navigator.of(_scaffoldKey.currentContext!).pushNamedAndRemoveUntil(
-            '/home',
-            arguments: {'from': context},
-            (Route<dynamic> route) => false,
-          );
-
-          Navigator.of(loadingPopup).pop();
-          ScaffoldMessenger.of(_scaffoldKey.currentContext!).showSnackBar(
-            const SnackBar(
-              content: Text('Account created successfully'),
-            ),
-          );
+          
         },
         verificationFailed: (FirebaseAuthException e) {
           Navigator.of(loadingPopup).pop();
@@ -449,7 +378,15 @@ class _RegisterPageState extends State<RegisterPage> {
                   onPressed: () async {
                     Navigator.of(loadingPopup).pop();
 
+                    String firstName = _firstNameController.text;
+                    String middleName = _middleNameController.text;
+                    String lastName = _lastNameController.text;
+                    String number = _numberController.text;
                     String email = _emailController.text;
+                    String unitAddress = _unitAddressController.text;
+                    String address = _addressController.text;
+                    String zipCode = _zipCodeController.text;
+                    String username = _usernameController.text;
                     String password = _passwordController.text;
 
                     FirebaseAuth.instance
@@ -457,9 +394,6 @@ class _RegisterPageState extends State<RegisterPage> {
                             verificationId: verificationId, smsCode: otpcode))
                         .then((value) async {
 
-                      setState(() {
-                        _userCredentialUid = value.user!.uid;
-                      });
 
                       AuthCredential emailCredential = EmailAuthProvider.credential(
                         email: email,
@@ -468,6 +402,78 @@ class _RegisterPageState extends State<RegisterPage> {
 
                       await FirebaseAuth.instance.currentUser!
                           .linkWithCredential(emailCredential);
+
+
+                      print('Verification completed');
+
+                      // Registration successful
+                      await FirebaseDatabase.instance
+                          .ref()
+                          .child('users')
+                          .child(value.user!.uid)
+                          .set({
+                        'firstName': firstName,
+                        'middleName': middleName,
+                        'lastName': lastName,
+                        'suffix': _selectedSuffix ?? '',
+                        'gender': _selectedGender,
+                        'birthday': _birthdayController.text,
+                        'number': number,
+                        'email': email,
+                        'country': _selectedCountry,
+                        'region': _selectedRegion,
+                        'province': _selectedProvince,
+                        'city': _selectedCity,
+                        'barangay': _selectedBarangay,
+                        'unitAddress': unitAddress,
+                        'address': address,
+                        'zipCode': zipCode,
+                        'username': username,
+                        'profileImage': '',
+                        'thumbProfileImage': '',
+                      });
+
+                      Reference ref = FirebaseStorage.instance
+                          .ref()
+                          .child('images')
+                          .child(value.user!.uid);
+
+                      Map<String, Uint8List> bytes = await _resizeImage(_image!);
+
+                      // Upload the resized image
+                      UploadTask uploadTask =
+                          ref.child('profile_image').putData(bytes['normal']!);
+                      TaskSnapshot taskSnapshot = await uploadTask.whenComplete(() => null);
+                      String imageUrl = await taskSnapshot.ref.getDownloadURL();
+
+                      // Upload the resized thumbnail image
+                      uploadTask =
+                          ref.child('thumb_profile_image').putData(bytes['thumbnail']!);
+                      taskSnapshot = await uploadTask.whenComplete(() => null);
+                      String thumbImageUrl = await taskSnapshot.ref.getDownloadURL();
+
+                      await FirebaseDatabase.instance
+                          .ref()
+                          .child('users')
+                          .child(value.user!.uid)
+                          .update({
+                        'profileImage': imageUrl,
+                        'thumbProfileImage': thumbImageUrl,
+                      });
+
+                      Navigator.of(loadingPopup).pop();
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        '/home',
+                        arguments: {'from': context},
+                        (Route<dynamic> route) => false,
+                      );
+
+                      Navigator.of(loadingPopup).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Account created successfully'),
+                        ),
+                      );
 
                     }).catchError((error) {
                       Navigator.of(loadingPopup).pop();
