@@ -21,28 +21,28 @@ jobs:
           year_delta=$((current_year - 2024))
           day=$(date +'%d')
           month=$(date +'%m')
+          daymonth="${day}${month}"
           
-          # Get the latest tag, default to v0.0.0.0 if no tags exist
-          latest_tag=$(git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || echo "v0.0.0.0")
+          # Get the latest tag, default to v0.0.0 if no tags exist
+          latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "v0.0.0")
           echo "Latest tag: $latest_tag"
           
-          # Extract version numbers from latest tag (expected format: vYEAR.DAY.MONTH.PATCH)
+          # Extract version numbers from latest tag (expected format: vYEAR.DAYMONTH.PATCH)
           version=$(echo $latest_tag | sed 's/v//' | cut -d'-' -f1)
           IFS='.' read -ra VERSION_PARTS <<< "$version"
           prev_year=${VERSION_PARTS[0]:-0}
-          prev_day=${VERSION_PARTS[1]:-0}
-          prev_month=${VERSION_PARTS[2]:-0}
-          prev_patch=${VERSION_PARTS[3]:-0}
+          prev_daymonth=${VERSION_PARTS[1]:-0}
+          prev_patch=${VERSION_PARTS[2]:-0}
           
-          # Determine patch version: if the date parts match, increment; otherwise start at 1
-          if [ "$prev_year" -eq "$year_delta" ] && [ "$prev_day" -eq "$day" ] && [ "$prev_month" -eq "$month" ]; then
+          # Determine patch version: if the year and daymonth parts match, increment; otherwise start at 1
+          if [ "$prev_year" -eq "$year_delta" ] && [ "$prev_daymonth" = "$daymonth" ]; then
             new_patch=$((prev_patch + 1))
           else
             new_patch=1
           fi
           
           # Build new version and tag strings
-          new_version="$year_delta.$day.$month.$new_patch"
+          new_version="$year_delta.$daymonth.$new_patch"
           new_tag="v$new_version"
           
           # Export variables
@@ -72,7 +72,7 @@ jobs:
         run: |
           # Adjust the source file path if your APK name or path differs.
           apk_source="build/app/outputs/apk/release/app-release.apk"
-          apk_destination="build/app/outputs/apk/release/HarvestGuardApp${{ env.NEW_VERSION }}.apk"
+          apk_destination="build/app/outputs/apk/release/HarvestGuard${{ env.NEW_VERSION }}.apk"
           if [ -f "$apk_source" ]; then
             mv "$apk_source" "$apk_destination"
             echo "Renamed APK to $apk_destination"
