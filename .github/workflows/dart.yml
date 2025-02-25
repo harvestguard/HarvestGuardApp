@@ -72,7 +72,7 @@ jobs:
         run: |
           # Adjust the source file path if your APK name or path differs.
           apk_source="build/app/outputs/apk/release/app-release.apk"
-          apk_destination="build/app/outputs/apk/release/HarvestGuard${{ env.NEW_VERSION }}.apk"
+          apk_destination="build/app/outputs/apk/release/HarvestGuard-v${{ env.NEW_VERSION }}.apk"
           if [ -f "$apk_source" ]; then
             mv "$apk_source" "$apk_destination"
             echo "Renamed APK to $apk_destination"
@@ -85,9 +85,14 @@ jobs:
         id: changelog
         run: |
           echo "Creating changelog..."
-          echo "## Changelog" > CHANGELOG.md
-          git log $(git describe --tags --abbrev=0 @^)..HEAD --pretty=format:"%h %s" >> CHANGELOG.md
-          echo "Changelog created."      
+          # Write header with title and generation timestamp
+          echo "# Changelog" > CHANGELOG.md
+          echo " Release date: $(date +'%Y-%m-%d %H:%M:%S')" >> CHANGELOG.md
+          echo " Version: ${{ env.NEW_VERSION }}" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          git log $(git describe --tags --abbrev=0 @^)..HEAD --pretty=format:"- **[%h](https://github.com/${{ github.repository }}/commit/%H)** %s" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "Changelog created."
 
       - name: Push to Releases
         uses: ncipollo/release-action@v1
