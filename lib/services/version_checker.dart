@@ -6,10 +6,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_file/open_file.dart';
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+import 'package:install_plugin/install_plugin.dart';
+
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
@@ -19,9 +19,11 @@ class VersionChecker {
 
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
-  static final ValueNotifier<double> downloadProgress =
-      ValueNotifier<double>(0);
+  static final ValueNotifier<double> downloadProgress = ValueNotifier<double>(0);
+  static final ValueNotifier<String> downloadSpeedText = ValueNotifier<String>("0 B/s");
+  static final ValueNotifier<String> timeLeftText = ValueNotifier<String>("calculating...");
   static const int notificationId = 888;
+  static const int permanentNotificationId = 889; // NEW constant for permanent notification
   static bool _isCancelled = false;
   static bool hasChecked = false;
   static StreamController<bool>? _downloadController;
@@ -32,7 +34,6 @@ class VersionChecker {
       // Get current version
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
       String currentVersion = packageInfo.version;
-      // String currentVersion = '0.0.1'; // For testing
 
       print("Current version: $currentVersion");
 
@@ -69,6 +70,8 @@ class VersionChecker {
 
   static void _showUpdateDialog(BuildContext context, String downloadUrl,
       String version, String releaseNotes) {
+    // Show a permanent notification indicating an available update.
+    _showPermanentUpdateNotification(version);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -79,26 +82,20 @@ class VersionChecker {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('A new version ($version) of the app is available.'),
-                  const SizedBox(height: 16),
-                  const Text('Release Notes:',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: MarkdownBody(
-                      data: releaseNotes,
-                    ),
-                  ),
-                ],
+              Text('A new version ($version) of the app is available.'),
+              const SizedBox(height: 16),
+              const Text('Release Notes:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: MarkdownBody(
+                  data: releaseNotes,
+                ),
               ),
             ],
           ),
@@ -121,13 +118,35 @@ class VersionChecker {
     );
   }
 
+  /// NEW: Show a permanent notification about the available update.
+  static Future<void> _showPermanentUpdateNotification(String version) async {
+    await flutterLocalNotificationsPlugin.show(
+      permanentNotificationId,
+      'Update Available',
+      'A new version ($version) is available. Tap to update.',
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'update_channel',
+          'App Updates',
+          channelDescription: 'Notifications for app updates',
+          importance: Importance.high,
+          priority: Priority.high,
+          ongoing: true,         // Make notification persistent
+          autoCancel: false,     // Prevent auto-cancellation when tapped
+        ),
+      ),
+      payload: 'update_notification',
+    );
+  }
+
   static Future<void> _downloadAndInstall(String downloadUrl) async {
     _downloadController = StreamController<bool>();
+    DateTime startTime = DateTime.now();
     try {
       final directory = await getTemporaryDirectory();
       final filePath = '${directory.path}/app-update.apk';
-      final request =
-          await http.Client().send(http.Request('GET', Uri.parse(downloadUrl)));
+      final request = await http.Client()
+          .send(http.Request('GET', Uri.parse(downloadUrl)));
       final contentLength = request.contentLength ?? 0;
       final file = File(filePath);
       final sink = file.openWrite();
@@ -144,11 +163,29 @@ class VersionChecker {
         final progress = received / contentLength;
         downloadProgress.value = progress;
 
+        // Calculate elapsed time in seconds.
+        final elapsed = DateTime.now().difference(startTime).inMilliseconds / 1000;
+        if (elapsed > 0) {
+          // Calculate speed in bytes per second.
+          double speed = received / elapsed;
+          String speedFormatted = _formatSpeed(speed);
+          // Calculate remaining time.
+          int secondsLeft = speed > 0
+              ? ((contentLength - received) / speed).round()
+              : 0;
+          int minutes = secondsLeft ~/ 60;
+          int secs = secondsLeft % 60;
+          String formattedTime = minutes > 0 ? "${minutes}m ${secs}s" : "${secs}s";
+          downloadSpeedText.value = speedFormatted;
+          timeLeftText.value = formattedTime;
+        }
+
+        // Update the download notification with progress details.
         if (!_isCancelled) {
           await flutterLocalNotificationsPlugin.show(
             notificationId,
             'Downloading Update',
-            'Download in progress...',
+            'Download in progress...\nSpeed: ${downloadSpeedText.value} - Time left: ${timeLeftText.value}',
             NotificationDetails(
               android: AndroidNotificationDetails(
                 'update_channel',
@@ -172,7 +209,7 @@ class VersionChecker {
         if (Platform.isAndroid) {
           final hasPermission = await _checkInstallPermission();
           if (hasPermission) {
-            await OpenFile.open(filePath);
+            InstallPlugin.installApk(filePath);
           } else {
             print('Permission denied to install the APK. Please allow installation from unknown sources in your device settings.');
           }
@@ -184,6 +221,16 @@ class VersionChecker {
     } finally {
       _downloadController?.close();
       _downloadController = null;
+    }
+  }
+
+  static String _formatSpeed(double bytesPerSec) {
+    if (bytesPerSec > 1024 * 1024) {
+      return "${(bytesPerSec / (1024 * 1024)).toStringAsFixed(2)} MB/s";
+    } else if (bytesPerSec > 1024) {
+      return "${(bytesPerSec / 1024).toStringAsFixed(2)} kB/s";
+    } else {
+      return "${bytesPerSec.toStringAsFixed(2)} B/s";
     }
   }
 
@@ -203,25 +250,88 @@ class VersionChecker {
     );
   }
 
+  // Update the _showProgressDialog function for a more elegant UI:
   static void _showProgressDialog(BuildContext context) {
     _isCancelled = false;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Downloading Update'),
-        content: ValueListenableBuilder<double>(
-          valueListenable: downloadProgress,
-          builder: (context, progress, _) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LinearProgressIndicator(value: progress),
-                const SizedBox(height: 16),
-                Text('${(progress * 100).toStringAsFixed(1)}%'),
-              ],
-            );
-          },
+        backgroundColor: Theme.of(context).colorScheme.background,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Center(
+          child: Column(
+            children: [
+              const Text(
+                'Downloading Update',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ValueListenableBuilder<double>(
+                valueListenable: downloadProgress,
+                builder: (context, progress, _) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 8,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              ValueListenableBuilder<double>(
+                valueListenable: downloadProgress,
+                builder: (context, progress, _) {
+                  return Text(
+                    '${(progress * 100).toStringAsFixed(1)}%',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ValueListenableBuilder<String>(
+                    valueListenable: downloadSpeedText,
+                    builder: (context, speed, _) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.speed, size: 16),
+                          const SizedBox(width: 4),
+                          Text(speed, style: const TextStyle(fontSize: 14)),
+                        ],
+                      );
+                    },
+                  ),
+                  ValueListenableBuilder<String>(
+                    valueListenable: timeLeftText,
+                    builder: (context, time, _) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.timer, size: 16),
+                          const SizedBox(width: 4),
+                          Text(time, style: const TextStyle(fontSize: 14)),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
