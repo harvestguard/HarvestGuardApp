@@ -16,7 +16,7 @@ import 'package:harvest_guard/home/shipping/shipment_page.dart';
 import 'package:harvest_guard/services/chat.dart';
 import 'package:harvest_guard/settings/settings_page.dart';
 import 'package:harvest_guard/slide_page.dart';
-import 'package:harvest_guard/version_checker.dart';
+import 'package:harvest_guard/services/version_checker.dart';
 import 'package:harvest_guard/theme.dart';
 import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';

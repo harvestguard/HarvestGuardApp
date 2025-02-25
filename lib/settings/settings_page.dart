@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:harvest_guard/front_page.dart';
 import 'package:harvest_guard/global.dart';
 import 'package:harvest_guard/settings/settings_provider.dart';
-import 'package:harvest_guard/version_checker.dart';
+import 'package:harvest_guard/services/version_checker.dart';
 import 'package:provider/provider.dart';
 
 class SettingsPage extends StatefulWidget {
