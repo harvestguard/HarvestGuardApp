@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:install_plugin/install_plugin.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -96,6 +97,9 @@ class VersionChecker {
               ),
               child: MarkdownBody(
                 data: releaseNotes,
+                onTapLink: (text, href, title) {
+                    _onTapLink(text, href, title);
+                  },
               ),
               ),
             ],
@@ -361,5 +365,16 @@ class VersionChecker {
       }
     }
     return true;
+  }
+
+  // NEW: Function to handle link taps from Markdown content.
+  static Future<void> _onTapLink(String? text, String? href, String? title) async {
+    if (href == null) return;
+    final Uri url = Uri.parse(href);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      print('Could not launch $href');
+    }
   }
 }
