@@ -7,6 +7,8 @@ GlobalKey<NavigatorState> navItemChats = GlobalKey();
 GlobalKey<NavigatorState> navItemAuctions = GlobalKey();
 GlobalKey<NavigatorState> navItemShipments = GlobalKey();
 GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+GlobalKey<ScaffoldState> loadingScaffoldKey = GlobalKey<ScaffoldState>();
+
 late ChatDatabase chatDatabase;
 late AuctionDatabase auctionDatabase;
 late ShipmentDatabase shipmentDatabase;
