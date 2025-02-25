@@ -85,8 +85,6 @@ class VersionChecker {
             children: [
               Text('A new version ($version) of the app is available.'),
               const SizedBox(height: 16),
-              const Text('Release Notes:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Container(
               width: double.infinity,
