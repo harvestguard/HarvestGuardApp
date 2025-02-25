@@ -85,17 +85,18 @@ class VersionChecker {
               Text('A new version ($version) of the app is available.'),
               const SizedBox(height: 16),
               const Text('Release Notes:',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+                style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: MarkdownBody(
-                  data: releaseNotes,
-                ),
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: MarkdownBody(
+                data: releaseNotes,
+              ),
               ),
             ],
           ),
