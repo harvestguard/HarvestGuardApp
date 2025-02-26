@@ -40,6 +40,7 @@ class _ChatsPageState extends State<ChatPage>
     final chats = context.watch<ChatDatabase>();
     final auctions = context.watch<AuctionDatabase>();
 
+
     return RepaintBoundary(child: Builder(builder: (context) {
       return Builder(builder: (context) {
         return FutureBuilder(
