@@ -20,11 +20,15 @@ class VersionChecker {
 
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
-  static final ValueNotifier<double> downloadProgress = ValueNotifier<double>(0);
-  static final ValueNotifier<String> downloadSpeedText = ValueNotifier<String>("0 B/s");
-  static final ValueNotifier<String> timeLeftText = ValueNotifier<String>("calculating...");
+  static final ValueNotifier<double> downloadProgress =
+      ValueNotifier<double>(0);
+  static final ValueNotifier<String> downloadSpeedText =
+      ValueNotifier<String>("0 B/s");
+  static final ValueNotifier<String> timeLeftText =
+      ValueNotifier<String>("calculating...");
   static const int notificationId = 888;
-  static const int permanentNotificationId = 889; // NEW constant for permanent notification
+  static const int permanentNotificationId =
+      889; // NEW constant for permanent notification
   static bool _isCancelled = false;
   static bool hasChecked = false;
   static StreamController<bool>? _downloadController;
@@ -87,18 +91,18 @@ class VersionChecker {
               const SizedBox(height: 16),
               const SizedBox(height: 8),
               Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: MarkdownBody(
-                data: releaseNotes,
-                onTapLink: (text, href, title) {
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: MarkdownBody(
+                  data: releaseNotes,
+                  onTapLink: (text, href, title) {
                     _onTapLink(text, href, title);
                   },
-              ),
+                ),
               ),
             ],
           ),
@@ -134,8 +138,8 @@ class VersionChecker {
           channelDescription: 'Notifications for app updates',
           importance: Importance.high,
           priority: Priority.high,
-          ongoing: true,         // Make notification persistent
-          autoCancel: false,     // Prevent auto-cancellation when tapped
+          ongoing: true, // Make notification persistent
+          autoCancel: false, // Prevent auto-cancellation when tapped
         ),
       ),
       payload: 'update_notification',
@@ -148,8 +152,8 @@ class VersionChecker {
     try {
       final directory = await getTemporaryDirectory();
       final filePath = '${directory.path}/app-update.apk';
-      final request = await http.Client()
-          .send(http.Request('GET', Uri.parse(downloadUrl)));
+      final request =
+          await http.Client().send(http.Request('GET', Uri.parse(downloadUrl)));
       final contentLength = request.contentLength ?? 0;
       final file = File(filePath);
       final sink = file.openWrite();
@@ -167,18 +171,19 @@ class VersionChecker {
         downloadProgress.value = progress;
 
         // Calculate elapsed time in seconds.
-        final elapsed = DateTime.now().difference(startTime).inMilliseconds / 1000;
+        final elapsed =
+            DateTime.now().difference(startTime).inMilliseconds / 1000;
         if (elapsed > 0) {
           // Calculate speed in bytes per second.
           double speed = received / elapsed;
           String speedFormatted = _formatSpeed(speed);
           // Calculate remaining time.
-          int secondsLeft = speed > 0
-              ? ((contentLength - received) / speed).round()
-              : 0;
+          int secondsLeft =
+              speed > 0 ? ((contentLength - received) / speed).round() : 0;
           int minutes = secondsLeft ~/ 60;
           int secs = secondsLeft % 60;
-          String formattedTime = minutes > 0 ? "${minutes}m ${secs}s" : "${secs}s";
+          String formattedTime =
+              minutes > 0 ? "${minutes}m ${secs}s" : "${secs}s";
           downloadSpeedText.value = speedFormatted;
           timeLeftText.value = formattedTime;
         }
@@ -214,7 +219,8 @@ class VersionChecker {
           if (hasPermission) {
             InstallPlugin.installApk(filePath);
           } else {
-            print('Permission denied to install the APK. Please allow installation from unknown sources in your device settings.');
+            print(
+                'Permission denied to install the APK. Please allow installation from unknown sources in your device settings.');
           }
         }
       }
@@ -248,9 +254,38 @@ class VersionChecker {
       onDidReceiveNotificationResponse: (details) {
         if (details.payload == 'download_progress') {
           _showProgressDialog(navigatorKeyMain.currentContext!);
+        } else if (details.payload == 'update_notification') {
+          // Handle the tap on the permanent notification
+          _handleUpdateNotificationTap();
         }
       },
     );
+  }
+
+  // New method to handle the update notification tap
+  static Future<void> _handleUpdateNotificationTap() async {
+    final context = navigatorKeyMain.currentContext;
+    if (context == null) return;
+
+    // Re-fetch the update information
+    try {
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      String currentVersion = packageInfo.version;
+
+      final response = await http.get(Uri.parse(GITHUB_API_URL));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        String latestVersion =
+            data['tag_name'].replaceAll('v', '').split('-')[0];
+        String downloadUrl = data['assets'][0]['browser_download_url'];
+
+        if (_isUpdateAvailable(currentVersion, latestVersion)) {
+          _showUpdateDialog(context, downloadUrl, latestVersion, data['body']);
+        }
+      }
+    } catch (e) {
+      print('Error handling update notification tap: $e');
+    }
   }
 
   // Update the _showProgressDialog function for a more elegant UI:
@@ -297,7 +332,8 @@ class VersionChecker {
                 builder: (context, progress, _) {
                   return Text(
                     '${(progress * 100).toStringAsFixed(1)}%',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w500),
                   );
                 },
               ),
@@ -338,6 +374,12 @@ class VersionChecker {
         ),
         actions: [
           TextButton(
+            child: const Text('Hide'),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+          TextButton(
             child: const Text('Cancel'),
             onPressed: () {
               _isCancelled = true;
@@ -366,7 +408,8 @@ class VersionChecker {
   }
 
   // NEW: Function to handle link taps from Markdown content.
-  static Future<void> _onTapLink(String? text, String? href, String? title) async {
+  static Future<void> _onTapLink(
+      String? text, String? href, String? title) async {
     if (href == null) return;
     final Uri url = Uri.parse(href);
     if (await canLaunchUrl(url)) {
