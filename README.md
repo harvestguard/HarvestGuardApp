@@ -65,7 +65,6 @@ pubspec.yaml
 
 ```sh
 flutter build apk --release  # Android
-flutter build ios            # iOS
 ```
 
 ## Development
