@@ -29,13 +29,53 @@ class NotificationDatabase extends ChangeNotifier {
   }
 
   Future<void> _initLocalNotifications() async {
-    await localNotif.initialize(
-      const InitializationSettings(
-        android: AndroidInitializationSettings('@drawable/ic_launcher_monochrome'),
-        iOS: DarwinInitializationSettings(),
+    // Define reply action for messaging notifications
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        localNotif.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    
+    await androidImplementation?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        'messages_channel',
+        'Message Notifications',
+        description: 'Chat messages',
+        importance: Importance.high,
+        enableVibration: true,
+        enableLights: true,
+        showBadge: true,
+        playSound: true,
       ),
     );
+
+    // Register for reply intents
+    const String replyActionId = 'REPLY_ACTION';
+    
+    // Initialize notifications with action handlers
+    await localNotif.initialize(
+      InitializationSettings(
+        android: const AndroidInitializationSettings('@drawable/ic_launcher_monochrome'),
+        iOS: const DarwinInitializationSettings(),
+      ),
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (response.notificationResponseType == NotificationResponseType.selectedNotificationAction &&
+            response.actionId == replyActionId) {
+          // Handle the reply text
+          final replyText = response.input;
+          if (replyText != null && replyText.isNotEmpty) {
+            // Here you would implement your reply logic
+            print('User replied: $replyText');
+            // sendReply(response.payload, replyText);
+          }
+        }
+      },
+    );
   }
+
+  // Store the last notification ID to prevent repeats
+  static String? _lastNotificationId;
+  // Store conversation data for People API
+  final Map<String, List<Message>> _conversations = {};
+  final Map<String, Person> _people = {};
 
   void _initializeNotificationsSubscription() {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -65,16 +105,22 @@ class NotificationDatabase extends ChangeNotifier {
       notifications = filtered.map((doc) => doc.data()).toList();
       notifyListeners();
 
-      print(notifications);
-
       if (notifications.isNotEmpty) {
-        // Sort notifications by timestamp descending.
+        // Sort notifications by timestamp descending
         notifications.sort((a, b) =>
             (int.parse(b['timestamp'].seconds.toString()))
                 .compareTo(int.parse(a['timestamp'].seconds.toString())));
+
         final latest = notifications.first;
-        // Only show a local notification if the sender is not the current user.
-        if (latest['sender'] != currentUser.uid) {
+        final notificationId =
+            latest['id'] ?? '${latest['timestamp'].seconds}_${latest['type']}';
+
+        // Only show notification if:
+        // 1. It's not from the current user
+        // 2. It hasn't been shown before (different ID from last notification)
+        if (latest['sender'] != currentUser.uid &&
+            notificationId != _lastNotificationId) {
+          _lastNotificationId = notificationId;
           _showLocalNotification(latest);
         }
       }
@@ -92,11 +138,7 @@ class NotificationDatabase extends ChangeNotifier {
         notif['type'] == 'deleteMessagePrivate';
 
     if (isChatNotification) {
-      final sender = (notif['from'] is Map)
-          ? '${notif['from']['name']['firstName']} ${notif['from']['name']['lastName']}'
-          : notif['from'];
-      title = 'New Message from $sender';
-      concise = notif['message'] ?? 'You have received a new message.';
+      await _showChatNotification(notif);
     } else {
       switch (notif['type']) {
         case 'newBid':
@@ -175,90 +217,11 @@ class NotificationDatabase extends ChangeNotifier {
         default:
           concise = notif['message'];
       }
-    }
 
-    // Choose channel id and name based on notification type.
-    final String channelId =
-        isChatNotification ? 'messages_channel' : 'notifications_channel';
-    final String channelName =
-        isChatNotification ? 'Message Notifications' : 'Notifications';
-
-    AndroidNotificationDetails androidDetails;
-
-    if (isChatNotification) {
-      // Use Android's MessagingStyle for conversation notifications.
-      final String senderName = (notif['from'] is Map)
-          ? '${notif['from']['name']['firstName']} ${notif['from']['name']['lastName']}'
-          : notif['from'] ?? 'Unknown';
-
-      // get the image from the database Image.network(notif['from']['thumbProfileImage'])
-
-      final imageThumbUrl = notif['from']['thumbProfileImage'] ?? '';
-      final Uri imageUri = Uri.parse(imageThumbUrl);
-      final ByteData imageData = await NetworkAssetBundle(imageUri).load("");
-      final Uint8List originalBytes = imageData.buffer.asUint8List();
-
-      // Decode the image using the image package.
-      final img.Image? originalImage = img.decodeImage(originalBytes);
-      Uint8List imageBytes;
-      if (originalImage != null) {
-        // Crop the image to a square.
-        int size = originalImage.width < originalImage.height
-            ? originalImage.width
-            : originalImage.height;
-        final img.Image squareImage =
-            img.copyResizeCropSquare(originalImage, size: size);
-
-        // Create a circular crop by applying a circular mask.
-        final img.Image circularImage = img.Image(width: size, height: size);
-        int center = size ~/ 2;
-        double radius = size / 2;
-        for (int y = 0; y < size; y++) {
-          for (int x = 0; x < size; x++) {
-            final dx = x - center;
-            final dy = y - center;
-            if (sqrt(dx * dx + dy * dy) <= radius) {
-              circularImage.setPixel(x, y, squareImage.getPixel(x, y));
-            } else {
-              circularImage.setPixel(x, y, img.ColorFloat16.rgba(0, 0, 0, 0));
-            }
-          }
-        }
-        imageBytes = Uint8List.fromList(img.encodePng(circularImage));
-      } else {
-        imageBytes = originalBytes;
-      }
-
-      final person =
-          Person(name: senderName, icon: ByteArrayAndroidIcon(imageBytes));
-      androidDetails = AndroidNotificationDetails(
-        channelId,
-        channelName,
-        channelDescription: 'Chat messages',
-        importance: Importance.max,
-        priority: Priority.high,
-        enableLights: true,
-        enableVibration: true,
-        playSound: true,
-        showWhen: false,
-        icon: '@drawable/ic_launcher_monochrome',
-        styleInformation: MessagingStyleInformation(
-          person,
-          groupConversation: true,
-          messages: [
-            Message(
-              concise,
-              DateTime.now(),
-              person,
-            )
-          ],
-        ),
-      );
-    } else {
-      // Use normal notification style.
-      androidDetails = AndroidNotificationDetails(
-        channelId,
-        channelName,
+      // Use normal notification style for non-chat notifications
+      final androidDetails = AndroidNotificationDetails(
+        'notifications_channel',
+        'Notifications',
         icon: '@drawable/ic_launcher_monochrome',
         channelDescription: 'General notifications',
         importance: Importance.max,
@@ -266,19 +229,172 @@ class NotificationDatabase extends ChangeNotifier {
         enableLights: true,
         enableVibration: true,
         playSound: true,
-        showWhen: false,
+        showWhen: true,
+      );
+
+      await localNotif.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000, // Unique ID
+        title,
+        concise,
+        NotificationDetails(
+          android: androidDetails,
+          iOS: const DarwinNotificationDetails(),
+        ),
       );
     }
+  }
 
-    await localNotif.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000, // Unique ID
-      title,
-      concise,
-      NotificationDetails(
-        android: androidDetails,
-        iOS: const DarwinNotificationDetails(),
+  Future<void> _showChatNotification(Map<String, dynamic> notif) async {
+    if (notif['from'] == null) return;
+    
+    // Extract conversation ID - could be a chat ID or a combination of users
+    final String conversationId = notif['chatId'] ?? 
+                                 '${notif['from']['uid']}_${notif['to']['uid']}';
+    
+    // Get or create sender Person object
+    final senderName = (notif['from'] is Map)
+        ? '${notif['from']['name']['firstName']} ${notif['from']['name']['lastName']}'
+        : notif['from']['name'] ?? 'Unknown';
+    
+    final String senderId = notif['from']['uid'] ?? 
+                           (notif['from'] is Map ? notif['from']['uid'] : notif['from']);
+    
+    // Get sender profile image for the Person
+    Person sender;
+    if (!_people.containsKey(senderId)) {
+      // Try to get profile image
+      try {
+        final imageThumbUrl = notif['from']['thumbProfileImage'] ?? '';
+        if (imageThumbUrl.isNotEmpty) {
+          final Uri imageUri = Uri.parse(imageThumbUrl);
+          final ByteData imageData = await NetworkAssetBundle(imageUri).load("");
+          final Uint8List originalBytes = imageData.buffer.asUint8List();
+          
+          // Process the image to make it circular
+          final img.Image? originalImage = img.decodeImage(originalBytes);
+          if (originalImage != null) {
+            final int size = min(originalImage.width, originalImage.height);
+            final img.Image circularImage = _createCircularImage(originalImage, size);
+            final Uint8List imageBytes = Uint8List.fromList(img.encodePng(circularImage));
+            
+            sender = Person(
+              name: senderName, 
+              key: senderId,
+              icon: ByteArrayAndroidIcon(imageBytes),
+              important: true,
+            );
+          } else {
+            sender = Person(name: senderName, key: senderId, important: true);
+          }
+        } else {
+          sender = Person(name: senderName, key: senderId, important: true);
+        }
+      } catch (e) {
+        sender = Person(name: senderName, key: senderId, important: true);
+        print('Error processing profile image: $e');
+      }
+      
+      _people[senderId] = sender;
+    } else {
+      sender = _people[senderId]!;
+    }
+    
+    // Initialize conversation if it doesn't exist
+    if (!_conversations.containsKey(conversationId)) {
+      _conversations[conversationId] = [];
+    }
+    
+    // Create the message
+    final message = Message(
+      notif['message'] ?? 'New message',
+      DateTime.fromMillisecondsSinceEpoch((notif['timestamp']?.seconds ?? 0) * 1000),
+      sender,
+    );
+    
+    // Add to conversation history (limit to last 10 messages)
+    _conversations[conversationId]!.add(message);
+    if (_conversations[conversationId]!.length > 10) {
+      _conversations[conversationId]!.removeAt(0);
+    }
+    
+    // Create RemoteInput for direct reply capability
+    final List<AndroidNotificationAction> actions = [
+      const AndroidNotificationAction(
+        'REPLY_ACTION',
+        'Reply',
+        icon: DrawableResourceAndroidBitmap('@android:drawable/ic_menu_send'),
+        inputs: [
+          AndroidNotificationActionInput(
+            allowFreeFormInput: true,
+            choices: [],
+            label: 'Reply',
+          ),
+        ],
+        contextual: true,
+        allowGeneratedReplies: true,
+      ),
+    ];
+
+    // Show the notification using Messaging style
+    final androidDetails = AndroidNotificationDetails(
+      'messages_channel',
+      'Message Notifications',
+      channelDescription: 'Chat messages',
+      category: AndroidNotificationCategory.message,
+      importance: Importance.high,
+      priority: Priority.high,
+      enableLights: true,
+      enableVibration: true,
+      playSound: true,
+      showWhen: true,
+      actions: actions,
+      icon: '@drawable/ic_launcher_monochrome',
+      styleInformation: MessagingStyleInformation(
+        Person(name: 'You', key: FirebaseAuth.instance.currentUser?.uid ?? 'user'),
+        conversationTitle: notif['chatName'] ?? senderName,
+        groupConversation: notif['isGroup'] ?? false,
+        messages: _conversations[conversationId]!,
       ),
     );
+
+    await localNotif.show(
+      senderId.hashCode, // Use a consistent ID for the same sender
+      senderName,
+      notif['message'] ?? 'New message',
+      NotificationDetails(
+        android: androidDetails,
+        iOS: DarwinNotificationDetails(
+          categoryIdentifier: 'message',
+          threadIdentifier: conversationId,
+        ),
+      ),
+      payload: conversationId, // Pass conversation ID for handling replies
+    );
+  }
+  
+  // Helper method to create circular profile images
+  img.Image _createCircularImage(img.Image original, int size) {
+    // Crop to square first
+    final img.Image squareImage = img.copyResizeCropSquare(original, size: size);
+    
+    // Create circular mask
+    final img.Image circularImage = img.Image(width: size, height: size);
+    final int center = size ~/ 2;
+    final double radius = size / 2;
+    
+    for (int y = 0; y < size; y++) {
+      for (int x = 0; x < size; x++) {
+        final dx = x - center;
+        final dy = y - center;
+        if (sqrt(dx * dx + dy * dy) <= radius) {
+          circularImage.setPixel(x, y, squareImage.getPixel(x, y));
+        } else {
+          circularImage.setPixel(x, y, img.ColorFloat16.rgba(0, 0, 0, 0));
+        }
+      }
+    }
+    
+    return circularImage;
   }
 
   @override
