@@ -417,7 +417,7 @@ class ChatDatabase extends ChangeNotifier {
 
   ChatDatabase() {
     _initializeMainSubscription();
-    print('INITIALIZED CHAT DATABASE');
+    debugPrint('INITIALIZED CHAT DATABASE');
   }
 
   void _initializeMainSubscription() {
@@ -427,41 +427,61 @@ class ChatDatabase extends ChangeNotifier {
             isEqualTo: true)
         .snapshots()
         .listen((event) {
-      print(event.docs);
+      debugPrint('Chat documents: ${event.docs.length}');
       if (_disposed) return; // Skip if disposed
       for (var element in event.docChanges) {
         if (element.type == DocumentChangeType.added ||
             (element.type == DocumentChangeType.modified &&
                 !chatEvents.containsKey(element.doc.id))) {
           if (chatsMap[element.doc.id] == null) {
-            chatsMap[element.doc.id] = element.doc.data();
-            for (var member in element.doc.data()!['info']['members'].keys) {
-              if (_disposed) return; // Skip if disposed during async operation
-              FirebaseDatabase.instance
-                  .ref()
-                  .child('users')
-                  .child(member)
-                  .once()
-                  .then((value) {
-                if (_disposed) {
-                  return; // Skip if disposed during async operation
-                }
-                Map<dynamic, dynamic> user =
-                    value.snapshot.value! as Map<dynamic, dynamic>;
-                chatsMap[element.doc.id]['members'][member] = user;
-                chatsMap[element.doc.id]['members'][member]['name'] = {
-                  'firstName': user['firstName'],
-                  'middleName': user['middleName'],
-                  'lastName': user['lastName'],
-                };
-                safeNotifyListeners();
-              });
+            // Initialize the chat entry with proper structure
+            final chatData = element.doc.data() ?? {};
+            chatsMap[element.doc.id] = chatData;
+            
+            // Ensure messages map exists
+            if (!chatsMap[element.doc.id].containsKey('messages')) {
+              chatsMap[element.doc.id]['messages'] = {};
+            }
+            
+            // Ensure members map exists
+            if (!chatsMap[element.doc.id].containsKey('members')) {
+              chatsMap[element.doc.id]['members'] = {};
+            }
+            
+            // Process each member's info
+            if (chatData['info'] != null && 
+                chatData['info']['members'] != null) {
+              for (var member in chatData['info']['members'].keys) {
+                if (_disposed) return; // Skip if disposed during async operation
+                FirebaseDatabase.instance
+                    .ref()
+                    .child('users')
+                    .child(member)
+                    .once()
+                    .then((value) {
+                  if (_disposed) {
+                    return; // Skip if disposed during async operation
+                  }
+                  if (value.snapshot.value != null) {
+                    Map<dynamic, dynamic> user =
+                        value.snapshot.value! as Map<dynamic, dynamic>;
+                    chatsMap[element.doc.id]['members'][member] = user;
+                    chatsMap[element.doc.id]['members'][member]['name'] = {
+                      'firstName': user['firstName'],
+                      'middleName': user['middleName'],
+                      'lastName': user['lastName'],
+                    };
+                    safeNotifyListeners();
+                  }
+                });
+              }
             }
           } else {
-            chatsMap[element.doc.id].addAll(element.doc.data());
+            // Update existing chat data
+            chatsMap[element.doc.id].addAll(element.doc.data() ?? {});
           }
 
-          // Removed chat message local notification logic.
+          // Setup messages listener
           var chatMessages = FirebaseFirestore.instance
               .collection('chats')
               .doc(element.doc.id)
@@ -469,10 +489,14 @@ class ChatDatabase extends ChangeNotifier {
               .snapshots()
               .listen((event) async {
             if (_disposed) return; // Skip if disposed
-            event.metadata.isFromCache
-                ? print('From cache')
-                : print('From server');
-            print(chatsMap[element.doc.id]['messages'].keys);
+            debugPrint('Message data source: ${event.metadata.isFromCache ? 'cache' : 'server'}');
+            
+            // Ensure messages map exists
+            if (!chatsMap[element.doc.id].containsKey('messages')) {
+              chatsMap[element.doc.id]['messages'] = {};
+            }
+            
+            debugPrint('Messages count: ${chatsMap[element.doc.id]['messages'].keys.length}');
 
             for (var message in event.docChanges) {
               if (_disposed) break; // Break loop if disposed
@@ -488,15 +512,12 @@ class ChatDatabase extends ChangeNotifier {
             safeNotifyListeners();
           });
           chatEvents[element.doc.id] = chatMessages;
-          if (chatsMap[element.doc.id].containsKey('messages') == false) {
-            chatsMap[element.doc.id]!['messages'] = {};
-            safeNotifyListeners();
-          }
-          print("change");
+          debugPrint("Chat structure updated: ${element.doc.id}");
         } else if (element.type == DocumentChangeType.removed &&
             chatEvents.containsKey(element.doc.id)) {
           chatEvents[element.doc.id]!.cancel();
           chatEvents.remove(element.doc.id);
+          chatsMap.remove(element.doc.id);
           safeNotifyListeners();
         }
       }
@@ -511,7 +532,7 @@ class ChatDatabase extends ChangeNotifier {
   }
 
   void updateData() {
-    print('UPDATED USER INFO');
+    debugPrint('UPDATED USER INFO');
     safeNotifyListeners();
   }
 

@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:harvest_guard/global.dart';
 
 
 class Chat {
@@ -141,8 +142,7 @@ class Chat {
         'lastMessageSender': '',
         'messageCount': 0,
         'chatInfos': {},
-        'members': usersMap.keys.toList(),
-      },
+        'members': Map.fromIterable(usersMap.keys, value: (_) => true),    },
       'members': usersMap,
     });
 
