@@ -217,20 +217,67 @@ class VersionChecker {
         if (Platform.isAndroid) {
           final hasPermission = await _checkInstallPermission();
           if (hasPermission) {
-            InstallPlugin.installApk(filePath);
-          } else {
-            print(
-                'Permission denied to install the APK. Please allow installation from unknown sources in your device settings.');
+            final apkFile = File(filePath);
+            if (await apkFile.exists() && await apkFile.length() > 0) {
+            _logError('Permission denied to install the APK. Please allow installation from unknown sources in your device settings.');
+            // Show a notification to inform user about permission issue
+            await _showInstallFailedNotification('Permission denied. Please allow installation from unknown sources.');
           }
         }
       }
+      }
     } catch (e) {
-      print('Error downloading update: $e');
+      _logError('Error downloading update: $e');
       await flutterLocalNotificationsPlugin.cancel(notificationId);
-    } finally {
-      _downloadController?.close();
-      _downloadController = null;
+      await _showInstallFailedNotification('Download failed. Please try again later.');
     }
+    
+  }
+  
+  static Future<void> _installApk(String filePath) async {
+    try {
+      await InstallPlugin.installApk(filePath);
+      // Show a notification that installation has started
+      await flutterLocalNotificationsPlugin.show(
+        notificationId + 1,
+        'Installing Update',
+        'Installation in progress. Please follow the on-screen instructions.',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'update_channel',
+            'App Updates',
+            channelDescription: 'Notifications for app updates',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+        ),
+      );
+    } catch (e) {
+      _logError('Error installing APK: $e');
+      await _showInstallFailedNotification('Installation failed. Please try manually.');
+    }
+  }
+  
+  static Future<void> _showInstallFailedNotification(String message) async {
+    await flutterLocalNotificationsPlugin.show(
+      notificationId + 2,
+      'Update Failed',
+      message,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'update_channel',
+          'App Updates',
+          channelDescription: 'Notifications for app updates',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+      ),
+    );
+  }
+  
+  static void _logError(String message) {
+    // Replace with your preferred logging framework
+    debugPrint('[ERROR] VersionChecker: $message');
   }
 
   static String _formatSpeed(double bytesPerSec) {
