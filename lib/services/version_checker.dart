@@ -39,8 +39,8 @@ class VersionChecker {
     try {
       // Get current version
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
-      // String currentVersion = packageInfo.version;
-      String currentVersion = '1.2702.1';
+      String currentVersion = packageInfo.version;
+      // String currentVersion = '1.2702.1';
 
       print("Current version: $currentVersion");
 
