@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:install_plugin/install_plugin.dart';
@@ -38,7 +39,8 @@ class VersionChecker {
     try {
       // Get current version
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
-      String currentVersion = packageInfo.version;
+      // String currentVersion = packageInfo.version;
+      String currentVersion = '1.2702.1';
 
       print("Current version: $currentVersion");
 
@@ -51,7 +53,7 @@ class VersionChecker {
         String downloadUrl = data['assets'][0]['browser_download_url'];
 
         if (_isUpdateAvailable(currentVersion, latestVersion)) {
-          _showUpdateDialog(context, downloadUrl, latestVersion, data['body']);
+          showUpdateDialog(context, downloadUrl, latestVersion, data['body']);
           return true;
         }
       }
@@ -73,21 +75,26 @@ class VersionChecker {
     return false;
   }
 
-  static void _showUpdateDialog(BuildContext context, String downloadUrl,
-      String version, String releaseNotes) {
+  static void showUpdateDialog(BuildContext context, String downloadUrl,
+      String version, String releaseNotes,
+      {bool force = false}) {
     // Show a permanent notification indicating an available update.
-    _showPermanentUpdateNotification(version);
+    if (!force) _showPermanentUpdateNotification(version);
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Update Available'),
+        title:
+            force ? const Text('Force update') : const Text('Update available'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('A new version ($version) of the app is available.'),
+              force
+                  ? Text('You have chosen to forcefully update the app.')
+                  : Text('A new version ($version) of the app is available.'),
               const SizedBox(height: 16),
               const SizedBox(height: 8),
               Container(
@@ -109,11 +116,20 @@ class VersionChecker {
         ),
         actions: [
           TextButton(
-            child: const Text('Remind Me Later'),
+            child: force ? const Text('Cancel') : const Text('Remind me later'),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
-            child: const Text('Update Now'),
+            child: const Text('Download package'),
+            onPressed: () {
+              Navigator.pop(context);
+              _showProgressDialog(context);
+              _downloadAndInstall(downloadUrl, install: false);
+            },
+          ),
+          TextButton(
+            child:
+                force ? const Text('Force update') : const Text('Update now'),
             onPressed: () {
               Navigator.pop(context);
               _showProgressDialog(context);
@@ -146,18 +162,24 @@ class VersionChecker {
     );
   }
 
-  static Future<void> _downloadAndInstall(String downloadUrl) async {
+  static Future<void> _downloadAndInstall(String downloadUrl,
+      {bool install = true}) async {
     _downloadController = StreamController<bool>();
     DateTime startTime = DateTime.now();
     try {
-      final directory = await getTemporaryDirectory();
-      final filePath = '${directory.path}/app-update.apk';
+      // get the last part of the download URL as the file name
+      final fileName = downloadUrl.split('/').last;      
+      final filePath = install
+          ? '${(await getTemporaryDirectory()).path}/app-update.apk'
+          : '/storage/emulated/0/Download/$fileName';
       final request =
           await http.Client().send(http.Request('GET', Uri.parse(downloadUrl)));
       final contentLength = request.contentLength ?? 0;
       final file = File(filePath);
       final sink = file.openWrite();
       int received = 0;
+
+      print('Downloading update to: $filePath, install: $install');
 
       await for (final chunk in request.stream) {
         if (_isCancelled) {
@@ -214,26 +236,51 @@ class VersionChecker {
       await sink.close();
       if (!_isCancelled) {
         await flutterLocalNotificationsPlugin.cancel(notificationId);
-        if (Platform.isAndroid) {
-          final hasPermission = await _checkInstallPermission();
-          if (hasPermission) {
-            final apkFile = File(filePath);
-            if (await apkFile.exists() && await apkFile.length() > 0) {
+        if (install) {
+          if (Platform.isAndroid) {
+            final hasPermission = await _checkInstallPermission();
+            if (hasPermission) {
+              final apkFile = File(filePath);
+              if (await apkFile.exists() && await apkFile.length() > 0) {
+                // hide the progress dialog
+                Navigator.pop(navigatorKeyMain.currentContext!);
+                _installApk(filePath);
+              }
+            }
+          } else {
             _logError('Permission denied to install the APK. Please allow installation from unknown sources in your device settings.');
-            // Show a notification to inform user about permission issue
-            await _showInstallFailedNotification('Permission denied. Please allow installation from unknown sources.');
+              // Show a notification to inform user about permission issue
+            await _showInstallFailedNotification(
+                'Permission denied. Please allow installation from unknown sources.');
           }
+        } else {
+          Navigator.pop(navigatorKeyMain.currentContext!);
+          showDialog(
+            context: navigatorKeyMain.currentContext!,
+            builder: (context) => AlertDialog(
+              title: const Text('Download Complete'),
+              content: const Text(
+                  'The update has been downloaded successfully, the file can be found in your download folder.'),
+              actions: [
+                TextButton(
+                  child: const Text('OK'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          );
         }
-      }
       }
     } catch (e) {
       _logError('Error downloading update: $e');
       await flutterLocalNotificationsPlugin.cancel(notificationId);
-      await _showInstallFailedNotification('Download failed. Please try again later.');
+      await _showInstallFailedNotification(
+          'Download failed. Please try again later.');
     }
-    
   }
-  
+
   static Future<void> _installApk(String filePath) async {
     try {
       await InstallPlugin.installApk(filePath);
@@ -254,10 +301,11 @@ class VersionChecker {
       );
     } catch (e) {
       _logError('Error installing APK: $e');
-      await _showInstallFailedNotification('Installation failed. Please try manually.');
+      await _showInstallFailedNotification(
+          'Installation failed. Please try manually.');
     }
   }
-  
+
   static Future<void> _showInstallFailedNotification(String message) async {
     await flutterLocalNotificationsPlugin.show(
       notificationId + 2,
@@ -274,7 +322,7 @@ class VersionChecker {
       ),
     );
   }
-  
+
   static void _logError(String message) {
     // Replace with your preferred logging framework
     debugPrint('[ERROR] VersionChecker: $message');
@@ -327,7 +375,7 @@ class VersionChecker {
         String downloadUrl = data['assets'][0]['browser_download_url'];
 
         if (_isUpdateAvailable(currentVersion, latestVersion)) {
-          _showUpdateDialog(context, downloadUrl, latestVersion, data['body']);
+          showUpdateDialog(context, downloadUrl, latestVersion, data['body']);
         }
       }
     } catch (e) {

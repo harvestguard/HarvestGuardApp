@@ -5,6 +5,8 @@ import 'package:harvest_guard/global.dart';
 import 'package:harvest_guard/settings/settings_provider.dart';
 import 'package:harvest_guard/services/version_checker.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -87,8 +89,46 @@ class _SettingsPageState extends State<SettingsPage>
 
                       if (!hasNew) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('No new updates available'),
+                          SnackBar(
+                            content: const Text('No new updates available'),
+                            action: SnackBarAction(
+                              label: 'Force update',
+                              onPressed: () async {
+                                // Get latest version info from GitHub
+                                try {
+                                  final response = await http.get(
+                                      Uri.parse(VersionChecker.GITHUB_API_URL));
+                                  if (response.statusCode == 200) {
+                                    final data = json.decode(response.body);
+                                    String latestVersion = data['tag_name']
+                                        .replaceAll('v', '')
+                                        .split('-')[0];
+                                    String downloadUrl = data['assets'][0]
+                                        ['browser_download_url'];
+
+                                    // Show dialog with release notes
+                                    VersionChecker.showUpdateDialog(
+                                        context,
+                                        downloadUrl,
+                                        latestVersion,
+                                        data['body'],
+                                        force: true);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Failed to fetch update information')),
+                                    );
+                                  }
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content:
+                                            Text('Error: ${e.toString()}')),
+                                  );
+                                }
+                              },
+                            ),
                           ),
                         );
                       }
