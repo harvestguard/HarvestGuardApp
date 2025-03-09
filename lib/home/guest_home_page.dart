@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:harvest_guard/custom/listener.dart';
 import 'package:harvest_guard/global.dart';
 import 'package:harvest_guard/home/auctions/auctions_page.dart';
 import 'package:harvest_guard/home/products/products_page.dart';
@@ -14,10 +15,18 @@ class GuestHomePage extends StatefulWidget {
 
 int _selectedIndex = 0;
 
+
 class GuestHomePageState extends State<GuestHomePage>
     with AutomaticKeepAliveClientMixin<GuestHomePage> {
   @override
   bool get wantKeepAlive => true;
+
+  
+  @override
+  void initState() {
+    auctionDatabase = AuctionDatabase();
+    super.initState();
+  }
 
   final List<NavigationDestination> _destinations = [
     const NavigationDestination(
