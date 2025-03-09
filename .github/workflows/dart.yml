@@ -21,7 +21,7 @@ jobs:
           year_delta=$((current_year - 2024))
           day=$(date +'%d')
           month=$(date +'%m')
-          daymonth="${day}${month}"
+          daymonth="${month}${day}"
           
           # Get the latest tag, default to v0.0.0 if no tags exist
           latest_tag=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "v0.0.0")
